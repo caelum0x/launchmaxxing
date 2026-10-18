@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from launchroster import reddit_search
+from launchmaxxing import reddit_search
 
 
 class _FakeResponse:

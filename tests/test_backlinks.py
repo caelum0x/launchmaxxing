@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from launchroster import backlinks
+from launchmaxxing import backlinks
 
 
 class _FakeResponse:

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from launchroster import state
+from launchmaxxing import state
 
 
 def test_load_missing_file_returns_empty_state(tmp_path: Path) -> None:
@@ -115,7 +115,7 @@ def test_set_draft_status_updates_and_rejects_bad_status() -> None:
 
 
 def test_default_path_uses_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LAUNCHROSTER_STATE", "/tmp/custom-state.json")
+    monkeypatch.setenv("LAUNCHMAXXING_STATE", "/tmp/custom-state.json")
     assert state.default_path() == Path("/tmp/custom-state.json")
-    monkeypatch.delenv("LAUNCHROSTER_STATE")
+    monkeypatch.delenv("LAUNCHMAXXING_STATE")
     assert state.default_path() == state.DEFAULT_STATE_PATH

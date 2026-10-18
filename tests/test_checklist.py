@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from launchroster import checklist, state
+from launchmaxxing import checklist, state
 
 
 def test_build_requires_product_name() -> None:

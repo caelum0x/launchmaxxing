@@ -5,7 +5,7 @@ are the same endpoints old.reddit.com's search box calls; they are public
 and unauthenticated (Reddit requires a descriptive ``User-Agent`` or it
 429s, same rule as any anonymous API client). This module only ever reads:
 it has no function that posts, comments or votes, by design -- a human
-reviews and posts every reply themselves. See :mod:`launchroster.cli`'s
+reviews and posts every reply themselves. See :mod:`launchmaxxing.cli`'s
 ``pain-points`` command.
 """
 
@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-USER_AGENT = "launchroster/1.0 (+https://github.com/caelum0x/launchroster; read-only Reddit search)"
+USER_AGENT = "launchmaxxing/1.0 (+https://github.com/caelum0x/launchmaxxing; read-only Reddit search)"
 BASE = "https://www.reddit.com"
 HTTP_TIMEOUT_S = 15.0
 MAX_SUBREDDITS = 10

@@ -1,13 +1,13 @@
 """Builds the 10-step first-100-users checklist for one product by combining
-the static playbook (:mod:`launchroster.catalog`) with saved progress
-(:mod:`launchroster.state`).
+the static playbook (:mod:`launchmaxxing.catalog`) with saved progress
+(:mod:`launchmaxxing.state`).
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from launchroster import catalog, state
+from launchmaxxing import catalog, state
 
 
 def build(app_state: dict[str, Any], product_name: str) -> dict[str, Any]:

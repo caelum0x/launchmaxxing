@@ -1,4 +1,4 @@
-# launchroster
+# launchmaxxing
 
 A founder's first-100-users toolkit, as a single local CLI. No signup, no
 server, no database -- state lives in one JSON file on your own machine.
@@ -9,7 +9,7 @@ Getting your first 100 users is mostly a checklist problem: which
 directories to submit to, which Reddit threads to reply to, which
 competitors you should get backlinks from, and whether you actually did any
 of it last week. That checklist shouldn't require creating an account
-somewhere. `launchroster` is that checklist, as a CLI you run locally.
+somewhere. `launchmaxxing` is that checklist, as a CLI you run locally.
 
 ## What's in it
 
@@ -42,7 +42,7 @@ every "share this" action is a draft a human reviews.
 ```bash
 pip install -e .
 # or, once published:
-pip install launchroster
+pip install launchmaxxing
 ```
 
 Requires Python 3.10+.
@@ -50,7 +50,7 @@ Requires Python 3.10+.
 ## Get value in under 5 minutes
 
 ```bash
-launchroster init "My Product"
+launchmaxxing init "My Product"
 ```
 
 This prints your full launch plan: all 18 directories to submit to, plus
@@ -73,44 +73,44 @@ Full 10-step playbook (0/10 done):
   ...
 
 Mark progress any time with:
-  launchroster platform-status "My Product" product_hunt submitted
-  launchroster checklist-step "My Product" cold_outreach done
+  launchmaxxing platform-status "My Product" product_hunt submitted
+  launchmaxxing checklist-step "My Product" cold_outreach done
 ```
 
 ## All commands
 
 ```bash
 # Directories, optionally filtered by category (ai, saas, dev_tool, oss, app, general)
-launchroster directories --category ai
+launchmaxxing directories --category ai
 
 # Record what you actually submitted
-launchroster platform-status "My Product" product_hunt submitted
+launchmaxxing platform-status "My Product" product_hunt submitted
 
 # The 10-step checklist for one product
-launchroster checklist "My Product"
-launchroster checklist-step "My Product" cold_outreach done
+launchmaxxing checklist "My Product"
+launchmaxxing checklist-step "My Product" cold_outreach done
 
 # Competitor backlinks (free fallback by default)
-launchroster backlinks competitor.com
-CRAWLGRAPH_API_KEY=... launchroster backlinks competitor.com --allow-live
+launchmaxxing backlinks competitor.com
+CRAWLGRAPH_API_KEY=... launchmaxxing backlinks competitor.com --allow-live
 
 # Reddit pain-point threads + draft replies (read-only, nothing is posted)
-launchroster pain-points "struggling with onboarding" --subreddit SaaS --product "My Product"
-launchroster drafts --status drafted
-launchroster draft-status <draft_id> approved
+launchmaxxing pain-points "struggling with onboarding" --subreddit SaaS --product "My Product"
+launchmaxxing drafts --status drafted
+launchmaxxing draft-status <draft_id> approved
 
 # Machine-readable output for any command
-launchroster checklist "My Product" --json
+launchmaxxing checklist "My Product" --json
 ```
 
-State is stored at `~/.launchroster/state.json` by default; override with
-`--state-file <path>` or the `LAUNCHROSTER_STATE` environment variable.
+State is stored at `~/.launchmaxxing/state.json` by default; override with
+`--state-file <path>` or the `LAUNCHMAXXING_STATE` environment variable.
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-pytest --cov=launchroster --cov-report=term-missing
+pytest --cov=launchmaxxing --cov-report=term-missing
 ```
 
 ## License
@@ -120,6 +120,6 @@ MIT, see [LICENSE](./LICENSE).
 ---
 
 Built by the team behind [Menivor](https://menivor.com) -- AI video
-creation for founders launching products. `launchroster` is free and open
+creation for founders launching products. `launchmaxxing` is free and open
 source, built to scratch our own itch while shipping Menivor; Menivor is
 the paid product that funds it.

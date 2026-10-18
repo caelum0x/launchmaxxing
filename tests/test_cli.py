@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from launchroster import backlinks, cli, reddit_search
+from launchmaxxing import backlinks, cli, reddit_search
 
 
 def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, args: list[str]) -> int:
@@ -18,7 +18,7 @@ def test_version(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc_info:
         cli.main(["--version"])
     assert exc_info.value.code == 0
-    assert "launchroster" in capsys.readouterr().out
+    assert "launchmaxxing" in capsys.readouterr().out
 
 
 def test_directories_text(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

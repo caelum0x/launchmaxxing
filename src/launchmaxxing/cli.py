@@ -1,9 +1,9 @@
-"""The ``launchroster`` command-line tool.
+"""The ``launchmaxxing`` command-line tool.
 
 Everything here is read-only against third parties except the local state
 file: nothing submits to a launch directory, posts to Reddit, or spends
 backlink API credits unless you explicitly pass ``--allow-live`` with a key
-configured. Run ``launchroster init "My Product"`` for a one-shot personalized
+configured. Run ``launchmaxxing init "My Product"`` for a one-shot personalized
 launch plan, or any subcommand with ``-h`` for details.
 """
 
@@ -15,12 +15,12 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
-from launchroster import __version__, backlinks, catalog, checklist, reddit_search, state
-from launchroster.transport import RequestsTransport
+from launchmaxxing import __version__, backlinks, catalog, checklist, reddit_search, state
+from launchmaxxing.transport import RequestsTransport
 
 FOOTER = (
     "\n---\nBuilt by the team behind Menivor (https://menivor.com) -- AI video creation for\n"
-    "founders launching products. launchroster is free and open source; Menivor is the paid\n"
+    "founders launching products. launchmaxxing is free and open source; Menivor is the paid\n"
     "product that funds it.\n"
 )
 
@@ -185,20 +185,20 @@ def _cmd_init(args: argparse.Namespace) -> int:
         mark = "x" if s["status"] == "done" else " "
         print(f"  [{mark}] {s['title']} -- {s['detail']}")
     print("\nMark progress any time with:")
-    print(f'  launchroster platform-status "{args.product}" product_hunt submitted')
-    print(f'  launchroster checklist-step "{args.product}" cold_outreach done')
+    print(f'  launchmaxxing platform-status "{args.product}" product_hunt submitted')
+    print(f'  launchmaxxing checklist-step "{args.product}" cold_outreach done')
     print(FOOTER)
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="launchroster", description=__doc__)
-    parser.add_argument("--version", action="version", version=f"launchroster {__version__}")
+    parser = argparse.ArgumentParser(prog="launchmaxxing", description=__doc__)
+    parser.add_argument("--version", action="version", version=f"launchmaxxing {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     def _add_common(p: argparse.ArgumentParser) -> None:
         p.add_argument("--state-file", default=None, help="Path to the local JSON state file "
-                       "(default: ~/.launchroster/state.json, or $LAUNCHROSTER_STATE).")
+                       "(default: ~/.launchmaxxing/state.json, or $LAUNCHMAXXING_STATE).")
         p.add_argument("--json", action="store_true", help="Print machine-readable JSON instead of text.")
 
     p_dirs = sub.add_parser("directories", help="List launch directories (Product Hunt, BetaList, ...).")

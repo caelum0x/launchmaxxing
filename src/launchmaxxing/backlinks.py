@@ -19,7 +19,7 @@ So this module:
   credits/quota on its own;
 * when not configured/not live, returns an honest "not connected" result
   plus the setup step, and a same-category fallback: the launch
-  directories from :mod:`launchroster.catalog` that fit general/SaaS
+  directories from :mod:`launchmaxxing.catalog` that fit general/SaaS
   products (a reasonable "submit here too" list without needing either
   paid API).
 """
@@ -29,7 +29,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from launchroster import catalog
+from launchmaxxing import catalog
 
 DATAFORSEO_LOGIN_ENV = "DATAFORSEO_LOGIN"
 DATAFORSEO_PASSWORD_ENV = "DATAFORSEO_PASSWORD"

@@ -1,5 +1,5 @@
-"""The tiny HTTP transport interface :mod:`launchroster.backlinks` and
-:mod:`launchroster.reddit_search` depend on, so tests can swap in a fake
+"""The tiny HTTP transport interface :mod:`launchmaxxing.backlinks` and
+:mod:`launchmaxxing.reddit_search` depend on, so tests can swap in a fake
 without a real network call. A transport only needs a ``request`` method
 that returns an object with a ``.status_code`` and a ``.json()`` method --
 :class:`requests.Response` already satisfies this, which is what

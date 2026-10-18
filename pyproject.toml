@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "launchroster"
+name = "launchmaxxing"
 version = "0.1.0"
 description = "A founder's first-100-users toolkit: launch directories, a distribution checklist, Reddit pain-point search and competitor backlink lookup -- all local, no account required."
 readme = "README.md"
@@ -25,14 +25,14 @@ dependencies = ["requests>=2.28"]
 dev = ["pytest>=7.4", "pytest-cov>=4.1"]
 
 [project.urls]
-Homepage = "https://github.com/caelum0x/launchroster"
-Repository = "https://github.com/caelum0x/launchroster"
+Homepage = "https://github.com/caelum0x/launchmaxxing"
+Repository = "https://github.com/caelum0x/launchmaxxing"
 
 [project.scripts]
-launchroster = "launchroster.cli:main"
+launchmaxxing = "launchmaxxing.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/launchroster"]
+packages = ["src/launchmaxxing"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

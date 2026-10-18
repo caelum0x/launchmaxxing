@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from launchroster import catalog
+from launchmaxxing import catalog
 
 
 def test_platform_count_and_shape() -> None:

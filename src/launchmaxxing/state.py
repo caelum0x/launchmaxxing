@@ -3,7 +3,7 @@
 The hosted version this was extracted from kept per-user rows in Postgres.
 A standalone CLI tool has no "user" to scope rows to, so this module
 replaces that with one JSON file on disk (default
-``~/.launchroster/state.json``, overridable via ``LAUNCHROSTER_STATE`` or
+``~/.launchmaxxing/state.json``, overridable via ``LAUNCHMAXXING_STATE`` or
 an explicit path) holding:
 
 * per-product launch-directory submission status (not_started / submitted / live)
@@ -29,11 +29,11 @@ PLATFORM_STATUSES = ("not_started", "submitted", "live")
 STEP_STATUSES = ("pending", "done")
 DRAFT_STATUSES = ("drafted", "approved", "dismissed")
 
-DEFAULT_STATE_PATH = Path.home() / ".launchroster" / "state.json"
+DEFAULT_STATE_PATH = Path.home() / ".launchmaxxing" / "state.json"
 
 
 def default_path() -> Path:
-    override = os.environ.get("LAUNCHROSTER_STATE")
+    override = os.environ.get("LAUNCHMAXXING_STATE")
     return Path(override).expanduser() if override else DEFAULT_STATE_PATH
 
 
@@ -77,7 +77,7 @@ def _product_bucket(state: dict[str, Any], product_name: str) -> dict[str, Any]:
 
 def set_platform_status(state: dict[str, Any], *, product_name: str, platform_id: str, status: str,
                         note: str = "") -> dict[str, Any]:
-    from launchroster import catalog
+    from launchmaxxing import catalog
 
     if platform_id not in catalog.PLATFORM_BY_ID:
         raise ValueError(f"unknown platform_id {platform_id!r}")
@@ -104,7 +104,7 @@ def get_platform_statuses(state: dict[str, Any], product_name: str) -> dict[str,
 
 def set_step_status(state: dict[str, Any], *, product_name: str, step_key: str, status: str,
                     note: str = "") -> dict[str, Any]:
-    from launchroster import catalog
+    from launchmaxxing import catalog
 
     if step_key not in catalog.STEP_BY_KEY:
         raise ValueError(f"unknown step_key {step_key!r}")
