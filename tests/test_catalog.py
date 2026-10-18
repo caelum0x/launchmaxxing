@@ -1,0 +1,54 @@
+from __future__ import annotations
+
+from launchroster import catalog
+
+
+def test_platform_count_and_shape() -> None:
+    assert len(catalog.PLATFORMS) == 18
+    for p in catalog.PLATFORMS:
+        assert p["id"] and p["name"] and p["url"].startswith("https://")
+        assert isinstance(p["categories"], tuple) and p["categories"]
+        assert p["note"]
+
+
+def test_platform_by_id_matches_platforms() -> None:
+    assert set(catalog.PLATFORM_BY_ID) == {p["id"] for p in catalog.PLATFORMS}
+    assert catalog.PLATFORM_BY_ID["product_hunt"]["name"] == "Product Hunt"
+
+
+def test_platforms_for_category_none_returns_all() -> None:
+    assert catalog.platforms_for_category(None) == catalog.PLATFORMS
+    assert catalog.platforms_for_category("") == catalog.PLATFORMS
+
+
+def test_platforms_for_category_filters() -> None:
+    ai_platforms = catalog.platforms_for_category("ai")
+    assert ai_platforms
+    assert all("ai" in p["categories"] for p in ai_platforms)
+    assert len(ai_platforms) < len(catalog.PLATFORMS)
+
+
+def test_platforms_for_category_is_case_insensitive() -> None:
+    assert catalog.platforms_for_category("AI") == catalog.platforms_for_category("ai")
+
+
+def test_platforms_for_category_unknown_returns_empty() -> None:
+    assert catalog.platforms_for_category("not-a-real-category") == ()
+
+
+def test_playbook_has_ten_steps() -> None:
+    assert len(catalog.PLAYBOOK_STEPS) == 10
+    keys = [s["key"] for s in catalog.PLAYBOOK_STEPS]
+    assert len(set(keys)) == 10
+    assert keys[0] == "launch_everywhere"
+
+
+def test_step_by_key_matches_playbook() -> None:
+    assert set(catalog.STEP_BY_KEY) == {s["key"] for s in catalog.PLAYBOOK_STEPS}
+
+
+def test_all_categories_sorted_and_covers_platforms() -> None:
+    categories = catalog.all_categories()
+    assert list(categories) == sorted(categories)
+    for p in catalog.PLATFORMS:
+        assert set(p["categories"]) <= set(categories)
