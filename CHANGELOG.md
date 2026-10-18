@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.2.1 -- 2026-10-18
+
+Dogfooded end-to-end on two real products (a live-traffic AI VTuber site and
+an open-source "awesome" list). Patches catalog accuracy issues found during
+that real launch, same day as the catalog's last "verified live" pass.
+
+### Fixed
+
+- **3 stale submit URLs** now 404 and have been corrected or pointed at a
+  stable fallback: `devhunt` (`/submit` -> `/login`, the site's own nav now
+  sends "Submit" straight to login), `tinylaunch` (`/launches/new` -> the
+  homepage; no stable direct submit URL exists in the static page anymore),
+  `futurepedia` (`/submit-tool` -> the homepage; submit flow is behind
+  client-side JS with no stable direct URL).
+- **Login-required reality corrected in notes** for `uneed`, `peerpush`,
+  `turbo0`, `smol_launch`, `startupbase`, `findly_tools`: all six either
+  redirect straight to a login/sign-in route, or let you paste a URL for
+  free but then gate finishing/publishing the listing behind account
+  creation. The notes previously read as more account-free than they are in
+  practice; they now say exactly what was observed on a real submission
+  attempt that day.
+- `there_is_an_ai_for_that`'s note now mentions the Cloudflare JS challenge
+  on `/add/` that blocks plain HTTP clients.
+- Only `launching_next` was confirmed genuinely account-free end-to-end: a
+  plain HTML POST to `https://www.launchingnext.com/submit/` with no cookies
+  or CSRF token returns a real `302` to a `/thanks/?i=...` confirmation page.
+
 ## 0.2.0 -- 2026-10-18
 
 Renamed from `launchroster` to `launchmaxxing` (GitHub repo renamed in

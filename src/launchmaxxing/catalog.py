@@ -18,9 +18,11 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
     {"id": "betalist", "name": "BetaList", "url": "https://betalist.com/submit",
      "categories": ("saas", "ai", "app", "general"),
      "note": "Pre-launch/early-stage audience; free submission queue is slower, paid is same-week."},
-    {"id": "devhunt", "name": "DevHunt", "url": "https://devhunt.org/submit",
+    {"id": "devhunt", "name": "DevHunt", "url": "https://devhunt.org/login",
      "categories": ("dev_tool", "ai", "saas"),
-     "note": "Developer-tool-focused Product-Hunt-style board."},
+     "note": "Developer-tool-focused Product-Hunt-style board; the old /submit URL now 404s -- "
+             "the site's own \"Submit\" link goes straight to /login, account required.",
+     "verified_at": "2026-10-18"},
     {"id": "peerlist", "name": "Peerlist (Launchpad)", "url": "https://peerlist.io/launchpad",
      "categories": ("saas", "ai", "dev_tool", "general"),
      "note": "Builder/tech-professional audience; a Peerlist profile post plus a Launchpad entry."},
@@ -37,21 +39,33 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
     {"id": "alternativeto", "name": "AlternativeTo", "url": "https://alternativeto.net/account/add-software/",
      "categories": ("saas", "ai", "dev_tool", "oss"),
      "note": "List as an alternative to the tool you displace; strong long-tail search traffic."},
-    {"id": "futurepedia", "name": "Futurepedia", "url": "https://www.futurepedia.io/submit-tool",
-     "categories": ("ai",), "note": "AI-tool-only directory with category pages that rank."},
+    {"id": "futurepedia", "name": "Futurepedia", "url": "https://www.futurepedia.io",
+     "categories": ("ai",),
+     "note": "AI-tool-only directory with category pages that rank; the old /submit-tool URL now "
+             "404s and the real submit flow is behind client-side JS with no stable direct URL -- "
+             "start from the homepage nav.", "verified_at": "2026-10-18"},
     {"id": "there_is_an_ai_for_that", "name": "There's An AI For That",
      "url": "https://theresanaiforthat.com/add/", "categories": ("ai",),
-     "note": "High-traffic AI-tool directory; free listing, paid featured slot."},
+     "note": "High-traffic AI-tool directory; free listing, paid featured slot. The /add/ page is "
+             "behind a Cloudflare JS challenge to plain HTTP clients -- use a real browser.",
+     "verified_at": "2026-10-18"},
     {"id": "g2", "name": "G2", "url": "https://www.g2.com/products/new",
      "categories": ("saas", "general"), "note": "Review-site listing; most value once there are real reviews."},
     {"id": "capterra", "name": "Capterra", "url": "https://www.capterra.com/vendors/sign-up",
      "categories": ("saas", "general"), "note": "B2B software directory; buyer-intent traffic."},
     {"id": "fazier", "name": "Fazier", "url": "https://fazier.com/launch",
      "categories": ("saas", "ai", "app", "general"), "note": "Startup launch directory with SEO backlinks."},
-    {"id": "uneed", "name": "Uneed", "url": "https://www.uneed.best/submit",
-     "categories": ("saas", "ai", "dev_tool", "general"), "note": "Daily/weekly/monthly launch leaderboard."},
-    {"id": "tinylaunch", "name": "TinyLaunch", "url": "https://www.tinylaunch.com/launches/new",
-     "categories": ("saas", "ai", "general"), "note": "Small-team-friendly weekly launch board."},
+    {"id": "uneed", "name": "Uneed", "url": "https://www.uneed.best/submit-a-tool",
+     "categories": ("saas", "ai", "dev_tool", "general"),
+     "note": "Daily/weekly/monthly launch leaderboard. The name+URL step is account-free, but "
+             "finishing the listing requires \"Create your free account to save [product] and "
+             "schedule its launch\" -- account required to actually publish.",
+     "verified_at": "2026-10-18"},
+    {"id": "tinylaunch", "name": "TinyLaunch", "url": "https://www.tinylaunch.com",
+     "categories": ("saas", "ai", "general"),
+     "note": "Small-team-friendly weekly launch board; the old /launches/new URL now 404s and "
+             "there's no stable direct submit URL in the static page -- start from the homepage.",
+     "verified_at": "2026-10-18"},
     {"id": "reddit_sidebuild", "name": "r/SideProject", "url": "https://www.reddit.com/r/SideProject/submit",
      "categories": ("saas", "ai", "app", "general", "oss"),
      "note": "Share the build, not a bare link; r/SideProject welcomes launches."},
@@ -62,19 +76,27 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
     {"id": "peerpush", "name": "PeerPush", "url": "https://peerpush.com/submit",
      "categories": ("saas", "ai", "ai_discovery", "dev_tool", "general"),
      "note": "Paste your URL, free/paid/sponsored launch tiers; explicitly optimizes listings for AI "
-             "assistants (ChatGPT, Perplexity, Claude/MCP) as well as human visitors.",
+             "assistants (ChatGPT, Perplexity, Claude/MCP) as well as human visitors. Re-checked "
+             "2026-10-18: the paste-URL step itself is account-free, but claiming/finishing a "
+             "listing (same account system as Uneed) requires sign-up.",
      "verified_at": "2026-10-18"},
     {"id": "turbo0", "name": "Turbo0", "url": "https://turbo0.com/submit",
      "categories": ("saas", "ai", "dev_tool", "general"),
-     "note": "Free dofollow listing with a permanent badge; roughly a two-week review queue.",
+     "note": "Free dofollow listing with a permanent badge; roughly a two-week review queue. "
+             "Re-checked 2026-10-18: /submit now redirects (302) straight to "
+             "/auth/login?callbackUrl=%2Fsubmit -- account required from the first step.",
      "verified_at": "2026-10-18"},
     {"id": "smol_launch", "name": "Smol Launch", "url": "https://smollaunch.com/submit",
      "categories": ("saas", "ai", "app", "general"),
-     "note": "A full week of visibility instead of one day; paste-URL submission, freemium tiers.",
+     "note": "A full week of visibility instead of one day; paste-URL submission, freemium tiers. "
+             "Re-checked 2026-10-18: the rendered page shows a Sign in control before the submit "
+             "form -- plan on creating an account.",
      "verified_at": "2026-10-18"},
     {"id": "startupbase", "name": "StartupBase", "url": "https://startupbase.io/launch",
      "categories": ("saas", "ai", "app", "general"),
-     "note": "Every approved product gets a real launch slot (not insiders-only) plus a DR75+ backlink.",
+     "note": "Every approved product gets a real launch slot (not insiders-only) plus a DR75+ "
+             "backlink. Re-checked 2026-10-18: the page itself ships a hidden login-email-origin "
+             "field and sign-in/sign-up copy -- account required to complete a listing.",
      "verified_at": "2026-10-18"},
     {"id": "microlaunch", "name": "Microlaunch", "url": "https://microlaunch.net",
      "categories": ("saas", "dev_tool", "general"),
@@ -83,7 +105,10 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
      "verified_at": "2026-10-18"},
     {"id": "findly_tools", "name": "Findly Tools", "url": "https://findly.tools/submit",
      "categories": ("ai", "saas", "dev_tool"),
-     "note": "AI/dev-tool discovery directory; paste-URL submission form.", "verified_at": "2026-10-18"},
+     "note": "AI/dev-tool discovery directory; paste-URL submission form. Re-checked 2026-10-18: "
+             "/submit now redirects (307) straight to /sign-in?from=%2Fsubmit -- account required "
+             "from the first step.",
+     "verified_at": "2026-10-18"},
 )
 PLATFORM_BY_ID: dict[str, dict[str, Any]] = {p["id"]: p for p in PLATFORMS}
 
