@@ -82,7 +82,7 @@ def _fetch_one(transport: Any, *, subreddit: str, query: str, limit: int, now: f
         params = {"q": query, "sort": "relevance", "limit": str(limit)}
     try:
         resp = transport.request("GET", url, params=params, headers={"User-Agent": USER_AGENT})
-    except Exception as exc:  # noqa: BLE001 - network boundary
+    except Exception as exc:
         raise RedditSearchError(f"Reddit search is unreachable ({type(exc).__name__}).") from exc
     status = getattr(resp, "status_code", 200)
     if status == 429:

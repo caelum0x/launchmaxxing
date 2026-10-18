@@ -4,7 +4,7 @@ from launchmaxxing import catalog
 
 
 def test_platform_count_and_shape() -> None:
-    assert len(catalog.PLATFORMS) == 18
+    assert len(catalog.PLATFORMS) == 24
     for p in catalog.PLATFORMS:
         assert p["id"] and p["name"] and p["url"].startswith("https://")
         assert isinstance(p["categories"], tuple) and p["categories"]
@@ -52,3 +52,15 @@ def test_all_categories_sorted_and_covers_platforms() -> None:
     assert list(categories) == sorted(categories)
     for p in catalog.PLATFORMS:
         assert set(p["categories"]) <= set(categories)
+
+
+def test_ai_discovery_category_present_for_geo_optimized_directories() -> None:
+    ai_discovery = catalog.platforms_for_category("ai_discovery")
+    assert ai_discovery
+    assert all(p["id"] == "peerpush" or "ai_discovery" in p["categories"] for p in ai_discovery)
+
+
+def test_v2_directories_have_verified_at() -> None:
+    v2_ids = {"peerpush", "turbo0", "smol_launch", "startupbase", "microlaunch", "findly_tools"}
+    for platform_id in v2_ids:
+        assert catalog.PLATFORM_BY_ID[platform_id].get("verified_at")

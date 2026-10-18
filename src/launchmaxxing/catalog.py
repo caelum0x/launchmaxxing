@@ -58,6 +58,32 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
     {"id": "github_awesome", "name": "Awesome lists (GitHub)",
      "url": "https://github.com/search?q=awesome+topic&type=repositories",
      "categories": ("oss", "dev_tool"), "note": "PR your repo into the matching awesome-* list for its category."},
+    # -- Added in v2 (2026-10-18), re-verified live via direct fetch that day; see CHANGELOG. --
+    {"id": "peerpush", "name": "PeerPush", "url": "https://peerpush.com/submit",
+     "categories": ("saas", "ai", "ai_discovery", "dev_tool", "general"),
+     "note": "Paste your URL, free/paid/sponsored launch tiers; explicitly optimizes listings for AI "
+             "assistants (ChatGPT, Perplexity, Claude/MCP) as well as human visitors.",
+     "verified_at": "2026-10-18"},
+    {"id": "turbo0", "name": "Turbo0", "url": "https://turbo0.com/submit",
+     "categories": ("saas", "ai", "dev_tool", "general"),
+     "note": "Free dofollow listing with a permanent badge; roughly a two-week review queue.",
+     "verified_at": "2026-10-18"},
+    {"id": "smol_launch", "name": "Smol Launch", "url": "https://smollaunch.com/submit",
+     "categories": ("saas", "ai", "app", "general"),
+     "note": "A full week of visibility instead of one day; paste-URL submission, freemium tiers.",
+     "verified_at": "2026-10-18"},
+    {"id": "startupbase", "name": "StartupBase", "url": "https://startupbase.io/launch",
+     "categories": ("saas", "ai", "app", "general"),
+     "note": "Every approved product gets a real launch slot (not insiders-only) plus a DR75+ backlink.",
+     "verified_at": "2026-10-18"},
+    {"id": "microlaunch", "name": "Microlaunch", "url": "https://microlaunch.net",
+     "categories": ("saas", "dev_tool", "general"),
+     "note": "Sign in, then use the 'New Launch' button (no direct /submit URL); listing stays live on "
+             "the board for about a month, aimed at micro-SaaS/small tools rather than one big launch day.",
+     "verified_at": "2026-10-18"},
+    {"id": "findly_tools", "name": "Findly Tools", "url": "https://findly.tools/submit",
+     "categories": ("ai", "saas", "dev_tool"),
+     "note": "AI/dev-tool discovery directory; paste-URL submission form.", "verified_at": "2026-10-18"},
 )
 PLATFORM_BY_ID: dict[str, dict[str, Any]] = {p["id"]: p for p in PLATFORMS}
 

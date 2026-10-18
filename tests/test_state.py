@@ -119,3 +119,20 @@ def test_default_path_uses_env_override(monkeypatch: pytest.MonkeyPatch) -> None
     assert state.default_path() == Path("/tmp/custom-state.json")
     monkeypatch.delenv("LAUNCHMAXXING_STATE")
     assert state.default_path() == state.DEFAULT_STATE_PATH
+
+
+def test_get_product_created_at_set_on_first_touch() -> None:
+    app_state = {"products": {}, "pain_point_drafts": []}
+    assert state.get_product_created_at(app_state, "Acme") is None
+    state.set_step_status(app_state, product_name="Acme", step_key="cold_outreach", status="pending")
+    created_at = state.get_product_created_at(app_state, "Acme")
+    assert created_at is not None
+
+
+def test_get_product_created_at_stable_across_updates() -> None:
+    app_state = {"products": {}, "pain_point_drafts": []}
+    state.set_step_status(app_state, product_name="Acme", step_key="cold_outreach", status="pending")
+    first = state.get_product_created_at(app_state, "Acme")
+    state.set_platform_status(app_state, product_name="Acme", platform_id="product_hunt", status="submitted")
+    second = state.get_product_created_at(app_state, "Acme")
+    assert first == second

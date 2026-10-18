@@ -72,7 +72,16 @@ def _product_bucket(state: dict[str, Any], product_name: str) -> dict[str, Any]:
     if not title:
         raise ValueError("product_name is required")
     products = state.setdefault("products", {})
-    return products.setdefault(title, {"platforms": {}, "steps": {}})
+    return products.setdefault(title, {"platforms": {}, "steps": {}, "created_at": _now_iso()})
+
+
+def get_product_created_at(state: dict[str, Any], product_name: str) -> str | None:
+    """ISO timestamp of when ``product_name`` was first touched (any platform/step write), or
+    ``None`` if the product has no saved state yet. Used to flag stale/overdue reminders in
+    :mod:`launchmaxxing.track` without requiring a separate "project start date" to be set by hand."""
+    title = product_name.strip()
+    bucket = state.get("products", {}).get(title)
+    return bucket.get("created_at") if bucket else None
 
 
 def set_platform_status(state: dict[str, Any], *, product_name: str, platform_id: str, status: str,
@@ -167,6 +176,6 @@ def set_draft_status(state: dict[str, Any], draft_id: str, status: str) -> dict[
 
 __all__ = [
     "DRAFT_STATUSES", "PLATFORM_STATUSES", "STEP_STATUSES", "add_pain_point_drafts", "default_path",
-    "get_platform_statuses", "get_step_statuses", "list_pain_point_drafts", "load", "save", "set_draft_status",
-    "set_platform_status", "set_step_status",
+    "get_platform_statuses", "get_product_created_at", "get_step_statuses", "list_pain_point_drafts", "load",
+    "save", "set_draft_status", "set_platform_status", "set_step_status",
 ]

@@ -83,7 +83,7 @@ def _fetch_crawlgraph(domain: str, *, transport: Any, api_key: str) -> dict[str,
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
             json={"domain": domain},
         )
-    except Exception as exc:  # noqa: BLE001 - network boundary
+    except Exception as exc:
         raise BacklinkError(f"CrawlGraph is unreachable ({type(exc).__name__}).", 502) from exc
     status = getattr(resp, "status_code", 200)
     if status >= 400:
@@ -111,7 +111,7 @@ def _fetch_dataforseo(domain: str, *, transport: Any, login: str, password: str)
             headers={"Authorization": f"Basic {auth}", "Content-Type": "application/json"},
             json=[{"target": domain, "limit": 50, "mode": "as_is"}],
         )
-    except Exception as exc:  # noqa: BLE001 - network boundary
+    except Exception as exc:
         raise BacklinkError(f"DataForSEO is unreachable ({type(exc).__name__}).", 502) from exc
     status = getattr(resp, "status_code", 200)
     if status >= 400:
@@ -148,4 +148,4 @@ def fetch(domain: str, *, transport: Any = None, allow_live: bool = False,
     return _fallback(clean, env=env)
 
 
-__all__ = ["BacklinkError", "SETUP_STEP", "configured", "fetch"]
+__all__ = ["SETUP_STEP", "BacklinkError", "configured", "fetch"]
