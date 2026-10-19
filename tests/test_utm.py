@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import csv
+from pathlib import Path
+
 import pytest
 
 from launchmaxxing import utm
@@ -57,3 +60,55 @@ def test_build_url_includes_optional_content_param() -> None:
 def test_build_url_rejects_empty_base_url() -> None:
     with pytest.raises(ValueError):
         utm.build_url("", source="s", medium="m", campaign="c")
+
+
+def _link_row(**overrides: str) -> dict[str, str]:
+    row = {"id": "l1", "product_name": "Acme", "platform_id": "product_hunt", "base_url": "https://acme.example",
+           "source": "producthunt", "medium": "launch_directory", "campaign": "acme-launch", "content": "",
+           "full_url": "https://acme.example?utm_source=producthunt&utm_medium=launch_directory"
+                       "&utm_campaign=acme-launch",
+           "created_at": "2026-10-01T00:00:00+00:00"}
+    row.update(overrides)
+    return row
+
+
+def test_write_links_csv_writes_header_and_rows(tmp_path: Path) -> None:
+    out_path = tmp_path / "links.csv"
+    rows = [_link_row(), _link_row(id="l2", platform_id="betalist", source="betalist")]
+
+    result = utm.write_links_csv(rows, out_path)
+
+    assert result == out_path
+    assert out_path.is_file()
+    with out_path.open(newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        data_rows = list(reader)
+    assert header == list(utm.CSV_FIELDS)
+    assert len(data_rows) == 2
+    expected_full_url = ("https://acme.example?utm_source=producthunt&utm_medium=launch_directory"
+                         "&utm_campaign=acme-launch")
+    assert data_rows[0] == ["l1", "Acme", "product_hunt", "https://acme.example", "producthunt",
+                            "launch_directory", "acme-launch", "", expected_full_url,
+                            "2026-10-01T00:00:00+00:00"]
+    assert data_rows[1][0:3] == ["l2", "Acme", "betalist"]
+
+
+def test_write_links_csv_handles_empty_rows(tmp_path: Path) -> None:
+    out_path = tmp_path / "empty.csv"
+
+    utm.write_links_csv([], out_path)
+
+    with out_path.open(newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        rows = list(reader)
+    assert rows == [list(utm.CSV_FIELDS)]
+
+
+def test_write_links_csv_accepts_str_path(tmp_path: Path) -> None:
+    out_path = tmp_path / "links.csv"
+
+    result = utm.write_links_csv([_link_row()], str(out_path))
+
+    assert result == out_path
+    assert out_path.is_file()

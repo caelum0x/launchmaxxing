@@ -356,6 +356,10 @@ def _cmd_outreach_list(args: argparse.Namespace) -> int:
     if args.json:
         _print({"contacts": rows}, as_json=True)
         return 0
+    if args.csv:
+        csv_path = outreach.write_contacts_csv(rows, Path(args.csv).expanduser())
+        print(f"Wrote {len(rows)} outreach contact(s) to {csv_path}")
+        return 0
     print(f"{len(rows)} outreach contact(s) for {args.product}:\n")
     for r in rows:
         line = f"- [{r['status']}] {r['name']} ({r['channel']})"
@@ -427,6 +431,10 @@ def _cmd_utm_list(args: argparse.Namespace) -> int:
         conn.close()
     if args.json:
         _print({"links": rows}, as_json=True)
+        return 0
+    if args.csv:
+        csv_path = utm.write_links_csv(rows, Path(args.csv).expanduser())
+        print(f"Wrote {len(rows)} UTM link(s) to {csv_path}")
         return 0
     print(f"{len(rows)} UTM link(s) for {args.product}:\n")
     for r in rows:
@@ -629,6 +637,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_o_list = outreach_sub.add_parser("list", help="List tracked outreach contacts.")
     p_o_list.add_argument("product")
     p_o_list.add_argument("--status", default=None, choices=db.OUTREACH_STATUSES)
+    p_o_list.add_argument("--csv", default=None, help="Write contacts to this CSV file instead of stdout, for "
+                          "import into Gmail mail-merge or a spreadsheet.")
     _add_common(p_o_list)
     p_o_list.set_defaults(func=_cmd_outreach_list)
 
@@ -664,6 +674,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_u_list = utm_sub.add_parser("list", help="List previously built UTM links for one product.")
     p_u_list.add_argument("product")
+    p_u_list.add_argument("--csv", default=None, help="Write links to this CSV file instead of stdout, for "
+                          "import into a spreadsheet.")
     _add_common(p_u_list)
     p_u_list.set_defaults(func=_cmd_utm_list)
 

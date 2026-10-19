@@ -11,8 +11,17 @@ sent by a human, same philosophy as :mod:`launchmaxxing.reddit_search`.
 
 from __future__ import annotations
 
+import csv
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
+
 from launchmaxxing.content import ProductProfile
 from launchmaxxing.db import OUTREACH_CHANNELS
+
+#: Column order for CSV export, matching the ``outreach_contacts`` row shape returned by
+#: :func:`launchmaxxing.db.list_outreach_contacts`.
+CSV_FIELDS = ("id", "product_name", "name", "channel", "handle", "status", "note", "created_at", "updated_at")
 
 
 def draft_message(channel: str, profile: ProductProfile, *, contact_name: str = "") -> str:
@@ -49,4 +58,17 @@ def draft_message(channel: str, profile: ProductProfile, *, contact_name: str = 
     )
 
 
-__all__ = ["draft_message"]
+def write_contacts_csv(rows: Sequence[dict[str, Any]], path: Path | str) -> Path:
+    """Write tracked outreach ``rows`` (as returned by :func:`launchmaxxing.db.list_outreach_contacts`)
+    to a CSV file at ``path`` with a header row, so a founder can import contacts into Gmail
+    mail-merge or a spreadsheet. Returns the resolved :class:`~pathlib.Path` written to."""
+    out_path = Path(path)
+    with out_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row.get(key, "") for key in CSV_FIELDS})
+    return out_path
+
+
+__all__ = ["CSV_FIELDS", "draft_message", "write_contacts_csv"]

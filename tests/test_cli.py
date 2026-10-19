@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from launchmaxxing import backlinks, cli, db, reddit_search
+from launchmaxxing import backlinks, cli, db, outreach, reddit_search, utm
 
 
 def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, args: list[str]) -> int:
@@ -434,6 +435,37 @@ def test_outreach_list_text_output(tmp_path: Path, capsys: pytest.CaptureFixture
     assert "likes dev tools" in out
 
 
+def test_outreach_list_csv_writes_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _run(None, tmp_path, ["outreach", "add", "Acme", "Jane Creator", "creator", "--handle", "@jane",
+                          "--note", "likes dev tools"])
+    capsys.readouterr()
+    csv_path = tmp_path / "contacts.csv"
+    code = _run(None, tmp_path, ["outreach", "list", "Acme", "--csv", str(csv_path)])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert csv_path.is_file()
+    assert f"Wrote 1 outreach contact(s) to {csv_path}" in out
+    with csv_path.open(newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        rows = list(reader)
+    assert header == list(outreach.CSV_FIELDS)
+    assert len(rows) == 1
+    assert rows[0][outreach.CSV_FIELDS.index("name")] == "Jane Creator"
+    assert rows[0][outreach.CSV_FIELDS.index("handle")] == "@jane"
+    assert rows[0][outreach.CSV_FIELDS.index("note")] == "likes dev tools"
+
+
+def test_outreach_list_csv_takes_precedence_over_text(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _run(None, tmp_path, ["outreach", "add", "Acme", "Jane Creator", "creator"])
+    capsys.readouterr()
+    csv_path = tmp_path / "contacts.csv"
+    code = _run(None, tmp_path, ["outreach", "list", "Acme", "--csv", str(csv_path)])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "outreach contact(s) for Acme:" not in out
+
+
 def test_outreach_add_rejects_blank_name(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code = _run(None, tmp_path, ["outreach", "add", "Acme", "   ", "creator"])
     assert code == 1
@@ -501,6 +533,35 @@ def test_utm_list_text_output(tmp_path: Path, capsys: pytest.CaptureFixture[str]
     assert code == 0
     assert "UTM link(s) for Acme" in out
     assert "acme.example" in out
+
+
+def test_utm_list_csv_writes_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _run(None, tmp_path, ["utm", "build", "Acme", "https://acme.example", "--platform-id", "product_hunt"])
+    capsys.readouterr()
+    csv_path = tmp_path / "links.csv"
+    code = _run(None, tmp_path, ["utm", "list", "Acme", "--csv", str(csv_path)])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert csv_path.is_file()
+    assert f"Wrote 1 UTM link(s) to {csv_path}" in out
+    with csv_path.open(newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        rows = list(reader)
+    assert header == list(utm.CSV_FIELDS)
+    assert len(rows) == 1
+    assert rows[0][utm.CSV_FIELDS.index("source")] == "producthunt"
+    assert "acme.example" in rows[0][utm.CSV_FIELDS.index("full_url")]
+
+
+def test_utm_list_csv_takes_precedence_over_text(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _run(None, tmp_path, ["utm", "build", "Acme", "https://acme.example"])
+    capsys.readouterr()
+    csv_path = tmp_path / "links.csv"
+    code = _run(None, tmp_path, ["utm", "list", "Acme", "--csv", str(csv_path)])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "UTM link(s) for Acme:" not in out
 
 
 # --------------------------------------------------------------------------- #

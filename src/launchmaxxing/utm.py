@@ -7,6 +7,10 @@ nothing here calls any of those services.
 
 from __future__ import annotations
 
+import csv
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 #: Sensible utm_source/utm_medium defaults per directory, so a founder does not have to invent
@@ -40,6 +44,11 @@ PLATFORM_UTM_DEFAULTS: dict[str, dict[str, str]] = {
 
 UTM_KEYS = ("utm_source", "utm_medium", "utm_campaign", "utm_content")
 
+#: Column order for CSV export, matching the ``utm_links`` row shape returned by
+#: :func:`launchmaxxing.db.list_utm_links`.
+CSV_FIELDS = ("id", "product_name", "platform_id", "base_url", "source", "medium", "campaign", "content",
+              "full_url", "created_at")
+
 
 def defaults_for_platform(platform_id: str) -> dict[str, str]:
     return dict(PLATFORM_UTM_DEFAULTS.get(platform_id, {"source": platform_id or "unknown", "medium": "referral"}))
@@ -63,4 +72,18 @@ def build_url(base_url: str, *, source: str, medium: str, campaign: str, content
     return urlunparse(parsed._replace(query=new_query))
 
 
-__all__ = ["PLATFORM_UTM_DEFAULTS", "UTM_KEYS", "build_url", "defaults_for_platform"]
+def write_links_csv(rows: Sequence[dict[str, Any]], path: Path | str) -> Path:
+    """Write saved UTM link ``rows`` (as returned by :func:`launchmaxxing.db.list_utm_links`) to a
+    CSV file at ``path`` with a header row, so a founder can import links into a spreadsheet.
+    Returns the resolved :class:`~pathlib.Path` written to."""
+    out_path = Path(path)
+    with out_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row.get(key, "") for key in CSV_FIELDS})
+    return out_path
+
+
+__all__ = ["CSV_FIELDS", "PLATFORM_UTM_DEFAULTS", "UTM_KEYS", "build_url", "defaults_for_platform",
+           "write_links_csv"]

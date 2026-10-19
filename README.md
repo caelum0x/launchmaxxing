@@ -54,12 +54,14 @@ after to track it.
 - **Local outreach pipeline (`outreach`)** -- track creator/press/
   community/user contacts with a status (not_contacted/contacted/replied/
   booked/declined) in the local database, plus a cold-outreach message
-  draft per channel.
+  draft per channel; `outreach list --csv contacts.csv` exports the tracked
+  contacts for Gmail mail-merge or a spreadsheet.
 - **Local UTM link builder (`utm`)** -- this tool has no server to receive
   clicks, so instead of faking analytics it builds correctly tagged links
   (with sensible per-directory source/medium defaults for all 24 catalog
   entries) and saves them locally, so you know which exact link you used
-  where. Paste the result into whatever analytics you already run.
+  where. Paste the result into whatever analytics you already run;
+  `utm list --csv links.csv` exports the saved links to a CSV file.
 - **Shareable one-page launch report (`report`)** -- a Markdown summary of
   everything tracked for one product, to paste into a doc or Slack instead
   of re-explaining launch status by hand.
@@ -122,11 +124,13 @@ launchmaxxing content "My Product" all --profile-file profile.json --save
 launchmaxxing outreach add "My Product" "Jane Creator" creator --handle "@jane"
 launchmaxxing outreach draft "My Product" creator --profile-file profile.json
 launchmaxxing outreach list "My Product" --status contacted
+launchmaxxing outreach list "My Product" --csv contacts.csv
 launchmaxxing outreach status <contact_id> replied --note "said yes, posting Friday"
 
 # Build + save a UTM-tagged link for one directory
 launchmaxxing utm build "My Product" https://myproduct.example --platform-id product_hunt
 launchmaxxing utm list "My Product"
+launchmaxxing utm list "My Product" --csv links.csv
 
 # The cross-cutting dashboard: directories, checklist, outreach, content, stale reminders
 launchmaxxing track "My Product"
