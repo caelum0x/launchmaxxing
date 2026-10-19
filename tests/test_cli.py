@@ -39,6 +39,34 @@ def test_directories_json_and_category_filter(tmp_path: Path, capsys: pytest.Cap
     assert all("ai" in p["categories"] for p in data["platforms"])
 
 
+def test_directories_account_free_filter(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    code = cli.main(["directories", "--account-free", "--json", "--state-file", str(tmp_path / "s.json")])
+    out = capsys.readouterr().out
+    assert code == 0
+    data = json.loads(out)
+    assert data["platforms"]
+    assert all(p["account_free"] for p in data["platforms"])
+    assert not any(p["id"] in ("devhunt", "uneed", "turbo0") for p in data["platforms"])
+
+
+def test_directories_account_free_combines_with_category(tmp_path: Path,
+                                                          capsys: pytest.CaptureFixture[str]) -> None:
+    code = cli.main(["directories", "--category", "ai", "--account-free", "--json",
+                     "--state-file", str(tmp_path / "s.json")])
+    out = capsys.readouterr().out
+    assert code == 0
+    data = json.loads(out)
+    assert data["platforms"]
+    assert all(p["account_free"] and "ai" in p["categories"] for p in data["platforms"])
+
+
+def test_directories_account_free_text_output(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    code = cli.main(["directories", "--account-free", "--state-file", str(tmp_path / "s.json")])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "account-free only" in out
+
+
 def test_platform_status_then_checklist(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert _run(None, tmp_path, ["platform-status", "Acme", "product_hunt", "submitted"]) == 0
     capsys.readouterr()

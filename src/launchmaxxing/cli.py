@@ -102,11 +102,14 @@ def _add_profile_flags(p: argparse.ArgumentParser) -> None:
 # --------------------------------------------------------------------------- #
 def _cmd_directories(args: argparse.Namespace) -> int:
     platforms = catalog.platforms_for_category(args.category)
+    if args.account_free:
+        platforms = catalog.platforms_account_free(platforms)
     if args.json:
         _print({"category": args.category or "", "platforms": list(platforms)}, as_json=True)
         return 0
     print(f"{len(platforms)} launch director{'y' if len(platforms) == 1 else 'ies'}"
-          f"{f' in category {args.category!r}' if args.category else ''}:\n")
+          f"{f' in category {args.category!r}' if args.category else ''}"
+          f"{' (account-free only)' if args.account_free else ''}:\n")
     for p in platforms:
         print(f"- {p['name']} -- {p['url']}\n    {p['note']}")
     return 0
@@ -538,6 +541,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_dirs = sub.add_parser("directories", help="List launch directories (Product Hunt, PeerPush, ...).")
     p_dirs.add_argument("--category", default=None, choices=(*catalog.all_categories(), None), metavar="CATEGORY")
+    p_dirs.add_argument("--account-free", action="store_true", dest="account_free",
+                        help="Only list directories that can be submitted without creating an account.")
     _add_common(p_dirs)
     p_dirs.set_defaults(func=_cmd_directories)
 

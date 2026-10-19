@@ -27,7 +27,10 @@ after to track it.
   AI-assistant discovery -- ChatGPT, Perplexity, Claude/MCP, not just human
   visitors), **Turbo0**, **Smol Launch**, **StartupBase**, **Microlaunch**
   and **Findly Tools** -- each with its real submission URL (verified live,
-  not just the homepage) and a one-line note on how to use it well.
+  not just the homepage) and a one-line note on how to use it well. Each
+  directory is also tagged with a real `account_free` flag, so
+  `directories --account-free` (combinable with `--category`) lists only
+  the ones you can submit to without creating an account anywhere in the flow.
 - **Submission tracking with full history**, not just current status --
   `submit` records every status change (not_started -> submitted -> live)
   with a timestamp in a local SQLite database, so `submit --history` shows

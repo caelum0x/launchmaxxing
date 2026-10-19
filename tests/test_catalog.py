@@ -9,6 +9,7 @@ def test_platform_count_and_shape() -> None:
         assert p["id"] and p["name"] and p["url"].startswith("https://")
         assert isinstance(p["categories"], tuple) and p["categories"]
         assert p["note"]
+        assert isinstance(p["account_free"], bool)
 
 
 def test_platform_by_id_matches_platforms() -> None:
@@ -64,3 +65,24 @@ def test_v2_directories_have_verified_at() -> None:
     v2_ids = {"peerpush", "turbo0", "smol_launch", "startupbase", "microlaunch", "findly_tools"}
     for platform_id in v2_ids:
         assert catalog.PLATFORM_BY_ID[platform_id].get("verified_at")
+
+
+def test_platforms_account_free_filters() -> None:
+    account_free = catalog.platforms_account_free(catalog.PLATFORMS)
+    assert account_free
+    assert all(p["account_free"] for p in account_free)
+    assert len(account_free) < len(catalog.PLATFORMS)
+
+
+def test_platforms_account_free_excludes_known_signup_required_entries() -> None:
+    account_free_ids = {p["id"] for p in catalog.platforms_account_free(catalog.PLATFORMS)}
+    for platform_id in ("devhunt", "uneed", "turbo0"):
+        assert platform_id not in account_free_ids
+
+
+def test_platforms_account_free_is_composable_with_category_filter() -> None:
+    ai_platforms = catalog.platforms_for_category("ai")
+    account_free_ai = catalog.platforms_account_free(ai_platforms)
+    assert account_free_ai
+    assert all(p["account_free"] and "ai" in p["categories"] for p in account_free_ai)
+    assert len(account_free_ai) < len(ai_platforms)
