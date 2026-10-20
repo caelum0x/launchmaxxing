@@ -62,6 +62,20 @@ def test_search_restricted_to_subreddits() -> None:
     assert transport.calls[1]["url"] == f"{reddit_search.BASE}/r/startups/search.json"
 
 
+def test_search_subreddit_names_starting_with_r_are_not_mangled() -> None:
+    # Regression test: subreddit normalization used to use str.lstrip("r/"), which strips any
+    # leading characters in the set {"r", "/"} rather than the literal "r/" prefix -- so
+    # "r/reactjs" became "eactjs" and even a bare "running" (no prefix at all) became "unning".
+    now = 1_700_000_000.0
+    transport = _FakeTransport([
+        _FakeResponse(200, {"data": {"children": []}}),
+        _FakeResponse(200, {"data": {"children": []}}),
+    ])
+    reddit_search.search(transport, query="q", subreddits=["r/reactjs", "running"], now=now)
+    assert transport.calls[0]["url"] == f"{reddit_search.BASE}/r/reactjs/search.json"
+    assert transport.calls[1]["url"] == f"{reddit_search.BASE}/r/running/search.json"
+
+
 def test_search_sorts_by_upvotes_descending() -> None:
     now = 1_700_000_000.0
     transport = _FakeTransport([_FakeResponse(200, {"data": {"children": [

@@ -108,7 +108,7 @@ def search(transport: Any, *, query: str, subreddits: list[str] | None = None, l
         raise RedditSearchError("query is required", 422)
     moment = now if now is not None else time.time()
     per_sub_limit = max(1, min(int(limit or 10), MAX_LIMIT))
-    subs = [s.strip().lstrip("r/").strip() for s in (subreddits or []) if str(s or "").strip()][:MAX_SUBREDDITS]
+    subs = [s.strip().removeprefix("r/").strip() for s in (subreddits or []) if str(s or "").strip()][:MAX_SUBREDDITS]
     seen: dict[str, RedditThread] = {}
     for sub in subs or [""]:
         for thread in _fetch_one(transport, subreddit=sub, query=q, limit=per_sub_limit, now=moment):
