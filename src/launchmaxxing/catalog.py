@@ -31,7 +31,11 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
      "note": "Title must start literally with \"Show HN:\"; founders/developers, not consumers."},
     {"id": "indie_hackers", "name": "Indie Hackers", "url": "https://www.indiehackers.com/post/new",
      "categories": ("saas", "general"), "account_free": True,
-     "note": "Post the build story and milestones, not a bare pitch; community of small teams/founders."},
+     "note": "Post the build story and milestones, not a bare pitch; community of small teams/founders. "
+             "The page is behind a Cloudflare JS challenge that returns 403 to plain HTTP clients "
+             "(confirmed with both this tool's checker and a real-browser User-Agent via curl) -- "
+             "use a real browser, this is a bot-check, not a dead URL.",
+     "verified_at": "2026-10-21"},
     {"id": "launching_next", "name": "Launching Next", "url": "https://launchingnext.com/submit",
      "categories": ("saas", "ai", "app", "general"), "account_free": True,
      "note": "Free pre-launch/launch directory."},

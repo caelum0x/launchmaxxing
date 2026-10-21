@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.2.3 -- 2026-10-21
+
+### Added
+
+- **`directories --check-links`** -- a live HTTP check of every submit URL
+  in the catalog (or one `--category`'s), flagging dead links (4xx/5xx) and
+  redirects straight to a login/sign-in page, with a non-zero exit code so
+  it can gate a release. This automates exactly the manual "try to submit,
+  hit a 404" discovery process that produced the stale-URL fixes in 0.2.1
+  and 0.2.2 -- the catalog's own accuracy is this tool's core promise, and
+  it was previously only checked by hand.
+
+### Fixed
+
+- **Generated X/Twitter launch thread had no character-limit enforcement.**
+  Unlike every other platform template here (Product Hunt tagline/
+  description, Show HN title all cap to their real limits), a profile with
+  a longer-than-average problem/audience/differentiator produced tweets up
+  to 365 characters -- well over X/Twitter's real 280-character-per-post
+  limit, so the generated thread would fail to post as written. Added
+  `content.TWITTER_TWEET_MAX` and truncate each tweet on a word boundary.
+- **`indie_hackers`'s catalog note didn't mention its Cloudflare bot
+  check** -- found dogfooding the new `--check-links` feature against the
+  live catalog: `/post/new` returns a 403 even with a real-browser
+  User-Agent via `curl` (confirmed separately from the automated check).
+  Noted as a bot-check, not a dead URL, matching the existing notes on
+  `alternativeto`, `there_is_an_ai_for_that`, `g2` and `capterra`.
+
 ## 0.2.2 -- 2026-10-21
 
 Dogfooded by launching `launchmaxxing` itself through its own catalog: real

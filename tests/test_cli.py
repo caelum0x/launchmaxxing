@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from launchmaxxing import backlinks, cli, db, outreach, reddit_search, utm
+from launchmaxxing import backlinks, cli, db, linkcheck, outreach, reddit_search, utm
 
 
 def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, args: list[str]) -> int:
@@ -81,6 +81,39 @@ def test_directories_account_free_text_output(tmp_path: Path, capsys: pytest.Cap
     out = capsys.readouterr().out
     assert code == 0
     assert "account-free only" in out
+
+
+def test_directories_check_links_reports_broken_and_exits_nonzero(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_check_all(transport: object, *, category: str | None = None) -> list[linkcheck.LinkCheckResult]:
+        return [
+            linkcheck.LinkCheckResult("product_hunt", "Product Hunt", "https://a.example", True, 200,
+                                      "https://a.example", "ok"),
+            linkcheck.LinkCheckResult("devhunt", "DevHunt", "https://b.example", False, 404,
+                                      "https://b.example", "HTTP 404"),
+        ]
+
+    monkeypatch.setattr(linkcheck, "check_all", fake_check_all)
+    code = cli.main(["directories", "--check-links", "--state-file", str(tmp_path / "s.json")])
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "1 reachable, 1 broken" in out
+    assert "FAIL" in out and "HTTP 404" in out
+    assert "catalog.py" in out
+
+
+def test_directories_check_links_json_and_all_ok(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_check_all(transport: object, *, category: str | None = None) -> list[linkcheck.LinkCheckResult]:
+        return [linkcheck.LinkCheckResult("product_hunt", "Product Hunt", "https://a.example", True, 200,
+                                          "https://a.example", "ok")]
+
+    monkeypatch.setattr(linkcheck, "check_all", fake_check_all)
+    code = cli.main(["directories", "--check-links", "--json", "--state-file", str(tmp_path / "s.json")])
+    data = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert data["checked"] == 1
+    assert data["broken"] == 0
 
 
 def test_platform_status_then_checklist(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -26,6 +26,7 @@ from launchmaxxing import (
     checklist,
     content,
     db,
+    linkcheck,
     outreach,
     reddit_search,
     report,
@@ -101,6 +102,8 @@ def _add_profile_flags(p: argparse.ArgumentParser) -> None:
 # directories
 # --------------------------------------------------------------------------- #
 def _cmd_directories(args: argparse.Namespace) -> int:
+    if getattr(args, "check_links", False):
+        return _cmd_directories_check_links(args)
     platforms = catalog.platforms_for_category(args.category)
     if args.account_free:
         platforms = catalog.platforms_account_free(platforms)
@@ -113,6 +116,30 @@ def _cmd_directories(args: argparse.Namespace) -> int:
     for p in platforms:
         print(f"- {p['name']} -- {p['url']}\n    {p['note']}")
     return 0
+
+
+def _cmd_directories_check_links(args: argparse.Namespace) -> int:
+    """Live reachability check for every catalog submit URL (or one category's) -- see
+    :mod:`launchmaxxing.linkcheck`. Automates the manual "try to submit, hit a 404" discovery
+    that produced 3 past changelog fixes to this exact catalog."""
+    results = linkcheck.check_all(RequestsTransport(), category=args.category)
+    broken = linkcheck.broken(results)
+    rows = [{"id": r.platform_id, "name": r.name, "url": r.url, "ok": r.ok,
+             "status_code": r.status_code, "final_url": r.final_url, "note": r.note} for r in results]
+    if args.json:
+        _print({"category": args.category or "", "checked": len(results), "broken": len(broken),
+                "results": rows}, as_json=True)
+        return 1 if broken else 0
+    print(f"Checked {len(results)} director{'y' if len(results) == 1 else 'ies'}"
+          f"{f' in category {args.category!r}' if args.category else ''}: "
+          f"{len(results) - len(broken)} reachable, {len(broken)} broken.\n")
+    for r in results:
+        marker = "OK  " if r.ok else "FAIL"
+        print(f"[{marker}] {r.name} -- {r.url}\n       {r.note}")
+    if broken:
+        print(f"\n{len(broken)} director{'y' if len(broken) == 1 else 'ies'} need a catalog fix "
+              "in src/launchmaxxing/catalog.py (dead URL, or account_free no longer true).")
+    return 1 if broken else 0
 
 
 # --------------------------------------------------------------------------- #
@@ -551,6 +578,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_dirs.add_argument("--category", default=None, choices=(*catalog.all_categories(), None), metavar="CATEGORY")
     p_dirs.add_argument("--account-free", action="store_true", dest="account_free",
                         help="Only list directories that can be submitted without creating an account.")
+    p_dirs.add_argument("--check-links", action="store_true", dest="check_links",
+                        help="Live HTTP check of every submit URL (or one --category's); flags dead "
+                             "links and redirects to a login page. Exits non-zero if any are broken.")
     _add_common(p_dirs)
     p_dirs.set_defaults(func=_cmd_directories)
 

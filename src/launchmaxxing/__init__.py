@@ -32,12 +32,16 @@ Ten pieces, each useful standalone:
   where people complain about the problem your product solves, with a
   draft reply for each one. Nothing here posts, comments or votes; a human
   reviews and posts everything by hand.
+* :mod:`launchmaxxing.linkcheck` -- a live reachability check for every
+  catalog submit URL, flagging dead links and redirects to a login page so
+  catalog staleness is caught automatically instead of by manually
+  submitting and hitting a 404.
 
 :mod:`launchmaxxing.cli` wires all of it into one command-line tool.
 """
 
 from __future__ import annotations
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 __all__ = ["__version__"]

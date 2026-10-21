@@ -31,6 +31,15 @@ after to track it.
   directory is also tagged with a real `account_free` flag, so
   `directories --account-free` (combinable with `--category`) lists only
   the ones you can submit to without creating an account anywhere in the flow.
+- **Live link check for the whole catalog (`directories --check-links`)** --
+  the catalog's own accuracy is the tool's core promise, and three past
+  releases (0.1.0 -> 0.2.1 -> 0.2.2) were all fixes for stale submit URLs or
+  wrong `account_free` tags found only by manually trying to submit and
+  hitting a 404 or an unexpected login wall. This automates that first
+  check: a real HTTP request against every submit URL, flagging dead links,
+  server errors, and redirects straight to a login/sign-in page, with a
+  non-zero exit code for CI/scripting. Doesn't require an account or API
+  key; `--category` scopes it to one category.
 - **Submission tracking with full history**, not just current status --
   `submit` records every status change (not_started -> submitted -> live)
   with a timestamp in a local SQLite database, so `submit --history` shows
@@ -171,6 +180,10 @@ product profile on every call:
 # Directories, optionally filtered by category
 # (ai, ai_discovery, saas, dev_tool, oss, app, general)
 launchmaxxing directories --category ai
+
+# Live-check every submit URL in the catalog (or one category's); exits 1 if any are broken
+launchmaxxing directories --check-links
+launchmaxxing directories --category ai --check-links --json
 
 # Submission tracking with history (submit is the current command;
 # platform-status is kept working as a deprecated alias)
