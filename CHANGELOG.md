@@ -1,9 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.2.2 -- 2026-10-21
+
+Dogfooded by launching `launchmaxxing` itself through its own catalog: real
+submission to Launching Next (queue `#165019`) and a real pull request
+adding it to `toolleeo/awesome-cli-apps-in-a-csv` (a 2.6k-star awesome
+list), which is exactly what the `github_awesome` playbook step describes.
+The two fixes below were both found during that dogfooding pass.
 
 ### Fixed
 
+- **`launchmaxxing --version` reported a stale version.** `__version__` in
+  `src/launchmaxxing/__init__.py` was never bumped past `"0.2.0"` across the
+  0.2.0 -> 0.2.1 release, so the CLI's own `--version` flag silently lied
+  about what was installed. Bumped to match `pyproject.toml` and added a
+  regression test that keeps the two in sync going forward.
 - **Generated launch copy truncated mid-word.** `_truncate` (used by the
   Product Hunt description, Show HN title, etc.) was a hard character cut
   that could land in the middle of a word (e.g. "...no account or se..."

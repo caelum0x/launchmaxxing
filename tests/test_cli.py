@@ -23,6 +23,20 @@ def test_version(capsys: pytest.CaptureFixture[str]) -> None:
     assert "launchmaxxing" in capsys.readouterr().out
 
 
+def test_version_matches_pyproject() -> None:
+    # Regression test: __version__ (reported by `launchmaxxing --version`) drifted out of sync
+    # with pyproject.toml's version across the 0.2.0 -> 0.2.1 release (stayed at "0.2.0" while
+    # pyproject moved to "0.2.1"), so `--version` silently lied about what was installed.
+    import re
+
+    from launchmaxxing import __version__
+
+    pyproject_text = (Path(__file__).resolve().parent.parent / "pyproject.toml").read_text()
+    match = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pyproject_text)
+    assert match, "could not find version in pyproject.toml"
+    assert __version__ == match.group(1)
+
+
 def test_directories_text(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["directories", "--state-file", str(tmp_path / "s.json")])
     out = capsys.readouterr().out
