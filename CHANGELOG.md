@@ -21,6 +21,21 @@
   `alternativeto`, `there_is_an_ai_for_that`, `g2`, `capterra`) with notes that already
   explain why -- no other stale URLs.
 
+### Distribution
+
+- **A third real `github_awesome` submission for launchmaxxing itself**: opened
+  [bekatom/awesome-growth-hacking#111](https://github.com/bekatom/awesome-growth-hacking/pull/111),
+  adding launchmaxxing to that list's `Tools` section (540-star awesome list, actively
+  merging CLI-tool entries in the same format). Joins the existing Launching Next
+  submission (queue `#165019`) and the
+  [toolleeo/awesome-cli-apps-in-a-csv#536](https://github.com/toolleeo/awesome-cli-apps-in-a-csv/pull/536)
+  PR as the tool's own real, tracked launch -- recorded with its own `submit` command
+  (`launchmaxxing submit launchmaxxing github_awesome submitted --note ...`), confirming
+  `submit --history` and `track` surface all three events correctly end to end. Full
+  `pytest` suite re-run clean (206 passed) and `directories --check-links` re-verified
+  against the live catalog (19/24 reachable, same 5 already-documented cases) as part of
+  this pass.
+
 ## 0.2.3 -- 2026-10-21
 
 ### Added
