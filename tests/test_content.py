@@ -60,6 +60,32 @@ def test_product_hunt_description_truncates_long_inputs() -> None:
     assert result["length"] <= content.PRODUCT_HUNT_DESCRIPTION_MAX
 
 
+def test_truncate_breaks_on_word_boundary_not_mid_word() -> None:
+    # Real sentence with spaces: truncation should land on a word boundary,
+    # not chop a word in half (e.g. "server" -> "se…"), since this text is
+    # meant to be pasted directly onto a launch directory.
+    text = ("Founders juggle launch directories, outreach follow-ups, UTM links "
+            "and launch copy by hand across spreadsheets, and lose track of what "
+            "they already submitted launchmaxxing fixes that: runs entirely "
+            "locally with no account or server required at all for anyone ever")
+    truncated = content._truncate(text, 80)
+    assert len(truncated) <= 80
+    assert truncated.endswith("…")
+    body = truncated[:-1].rstrip()
+    assert not text.startswith(body) or text[len(body):len(body) + 1] in ("", " ")
+    # the word immediately before the ellipsis must be a whole word from the source text
+    last_word = body.split()[-1]
+    assert last_word in text.split()
+
+
+def test_truncate_falls_back_to_hard_cut_when_no_word_boundary_available() -> None:
+    # A single unbroken "word" (e.g. a long URL or slug) has no space to break
+    # on -- must still truncate cleanly rather than loop forever or overflow.
+    truncated = content._truncate("x" * 120, 60)
+    assert len(truncated) <= 60
+    assert truncated.endswith("…")
+
+
 def test_show_hn_title_format_and_limit() -> None:
     result = content.show_hn_title(_profile())
     assert result["text"].startswith("Show HN: Acme – ")

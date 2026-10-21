@@ -68,10 +68,22 @@ def _collapse(text: str) -> str:
 
 
 def _truncate(text: str, limit: int) -> str:
+    """Truncate ``clean`` to ``limit`` chars (including the trailing "…"), preferring to cut on a
+    word boundary so generated copy never chops a word in half (e.g. "server" -> "se…") -- this
+    text is meant to be pasted directly onto a launch directory, not post-edited. Falls back to a
+    hard character cut when there is no space to break on (e.g. a single long URL/slug) or when
+    breaking on the last space would throw away most of the available budget."""
     clean = _collapse(text)
     if len(clean) <= limit:
         return clean
-    return clean[: max(0, limit - 1)].rstrip() + "…"
+    budget = max(0, limit - 1)
+    window = clean[:budget]
+    last_space = window.rfind(" ")
+    # Only prefer the word boundary if it does not waste more than ~20% of the budget;
+    # otherwise a hard cut uses the available space better.
+    if last_space > 0 and last_space >= budget * 0.8:
+        window = window[:last_space]
+    return window.rstrip() + "…"
 
 
 def _strip_hype(text: str) -> str:

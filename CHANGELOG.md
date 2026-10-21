@@ -4,6 +4,14 @@
 
 ### Fixed
 
+- **Generated launch copy truncated mid-word.** `_truncate` (used by the
+  Product Hunt description, Show HN title, etc.) was a hard character cut
+  that could land in the middle of a word (e.g. "...no account or se..."
+  instead of "...no account or..."). Found dogfooding `content` on
+  `launchmaxxing` itself. Now prefers the nearest word boundary within the
+  character budget, falling back to a hard cut only when there's no usable
+  space to break on (e.g. a single long token) or breaking there would
+  waste too much of the budget.
 - **`account_free` mistagged for 3 directories** -- `g2`, `capterra` and
   `alternativeto` were tagged `account_free: True` even though their own
   submit URLs are literally account/vendor sign-up pages
