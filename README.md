@@ -81,10 +81,21 @@ and sends themselves.
 
 ## Install
 
+Not yet on PyPI (see [RELEASE.md](./RELEASE.md)) -- `pip install` directly
+from the tagged GitHub release works today, no local clone required:
+
 ```bash
-pip install -e .
-# or, once published:
+pip install "git+https://github.com/caelum0x/launchmaxxing.git@v0.2.2"
+# or, once published to PyPI:
 pip install launchmaxxing
+```
+
+From a local clone instead:
+
+```bash
+git clone https://github.com/caelum0x/launchmaxxing.git
+cd launchmaxxing
+pip install -e .
 ```
 
 Requires Python 3.10+. No other services required -- the local SQLite
