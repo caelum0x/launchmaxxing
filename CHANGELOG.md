@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.4 -- 2026-10-22
+
+### Fixed
+
+- **`launching_next`'s submit URL was stale and 404ing live.** The catalog stored
+  `https://launchingnext.com/submit` (no `www.`, no trailing slash); the live site now
+  enforces both the `www.` host and the trailing slash, so the stored URL 404ed while
+  `https://www.launchingnext.com/submit/` returns a real `200` with a plain,
+  account-free `<form method="post">`. Found by running the `0.2.3 directories
+  --check-links` feature against the live catalog the day after it shipped -- exactly
+  the kind of regression it exists to catch. Notable because Launching Next was the one
+  directory CHANGELOG 0.2.1 confirmed "genuinely account-free end-to-end" via a real
+  POST, and real submissions for ereboslab, lawsynth and scribase went through it (see
+  `launch-evidence/`); a stale URL here would have silently broken the most-trusted
+  account-free directory in the catalog. Corrected the URL, added a regression test
+  (`test_launching_next_url_is_the_live_www_and_trailing_slash_form`) pinning the exact
+  live form, and re-ran `--check-links` against the full catalog: of the 24 entries, only
+  5 now fail, all already-documented Cloudflare/bot-wall cases (`indie_hackers`,
+  `alternativeto`, `there_is_an_ai_for_that`, `g2`, `capterra`) with notes that already
+  explain why -- no other stale URLs.
+
 ## 0.2.3 -- 2026-10-21
 
 ### Added

@@ -36,9 +36,14 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
              "(confirmed with both this tool's checker and a real-browser User-Agent via curl) -- "
              "use a real browser, this is a bot-check, not a dead URL.",
      "verified_at": "2026-10-21"},
-    {"id": "launching_next", "name": "Launching Next", "url": "https://launchingnext.com/submit",
+    {"id": "launching_next", "name": "Launching Next", "url": "https://www.launchingnext.com/submit/",
      "categories": ("saas", "ai", "app", "general"), "account_free": True,
-     "note": "Free pre-launch/launch directory."},
+     "note": "Free pre-launch/launch directory; the submission form itself is account-free "
+             "(plain POST, no login). The old `https://launchingnext.com/submit` (no `www.`, no "
+             "trailing slash) now 404s -- the site enforces both the `www.` host and the trailing "
+             "slash; `--check-links` caught this live. Confirmed real submissions went through this "
+             "directory for ereboslab, lawsynth and scribase (see launch-evidence/).",
+     "verified_at": "2026-10-22"},
     {"id": "saashub", "name": "SaaSHub", "url": "https://www.saashub.com/submit",
      "categories": ("saas", "ai", "dev_tool"), "account_free": True,
      "note": "Alternative-to style directory; good for SEO backlinks."},

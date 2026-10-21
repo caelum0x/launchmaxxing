@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "launchmaxxing"
-version = "0.2.3"
+version = "0.2.4"
 description = "A founder's first-100-users toolkit: 24 launch directories, submission tracking with history, a 10-step distribution checklist, per-platform launch-copy generation, outreach pipeline tracking, UTM link building, Reddit pain-point search, competitor backlink lookup and shareable launch reports -- all local, SQLite + JSON on disk, no account required."
 readme = "README.md"
 license = { text = "MIT" }

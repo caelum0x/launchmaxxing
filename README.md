@@ -94,7 +94,7 @@ Not yet on PyPI (see [RELEASE.md](./RELEASE.md)) -- `pip install` directly
 from the tagged GitHub release works today, no local clone required:
 
 ```bash
-pip install "git+https://github.com/caelum0x/launchmaxxing.git@v0.2.3"
+pip install "git+https://github.com/caelum0x/launchmaxxing.git@v0.2.4"
 # or, once published to PyPI:
 pip install launchmaxxing
 ```

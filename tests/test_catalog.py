@@ -67,6 +67,16 @@ def test_v2_directories_have_verified_at() -> None:
         assert catalog.PLATFORM_BY_ID[platform_id].get("verified_at")
 
 
+def test_launching_next_url_is_the_live_www_and_trailing_slash_form() -> None:
+    # Regression test: the bare `https://launchingnext.com/submit` (no `www.`, no trailing
+    # slash) 404s in production -- found live via `directories --check-links` on 2026-10-22.
+    # Only `https://www.launchingnext.com/submit/` resolves; don't regress to the stale form.
+    platform = catalog.PLATFORM_BY_ID["launching_next"]
+    assert platform["url"] == "https://www.launchingnext.com/submit/"
+    assert platform["account_free"] is True
+    assert platform.get("verified_at")
+
+
 def test_platforms_account_free_filters() -> None:
     account_free = catalog.platforms_account_free(catalog.PLATFORMS)
     assert account_free
