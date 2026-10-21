@@ -39,8 +39,12 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
      "categories": ("saas", "ai", "dev_tool"), "account_free": True,
      "note": "Alternative-to style directory; good for SEO backlinks."},
     {"id": "alternativeto", "name": "AlternativeTo", "url": "https://alternativeto.net/account/add-software/",
-     "categories": ("saas", "ai", "dev_tool", "oss"), "account_free": True,
-     "note": "List as an alternative to the tool you displace; strong long-tail search traffic."},
+     "categories": ("saas", "ai", "dev_tool", "oss"), "account_free": False,
+     "note": "List as an alternative to the tool you displace; strong long-tail search traffic. "
+             "The submit URL is literally the account area (`/account/add-software/`) -- AlternativeTo "
+             "requires a free account to add software; site is also behind a Cloudflare JS challenge "
+             "that blocks plain HTTP verification.",
+     "verified_at": "2026-10-21"},
     {"id": "futurepedia", "name": "Futurepedia", "url": "https://www.futurepedia.io",
      "categories": ("ai",), "account_free": True,
      "note": "AI-tool-only directory with category pages that rank; the old /submit-tool URL now "
@@ -52,11 +56,17 @@ PLATFORMS: tuple[dict[str, Any], ...] = (
              "behind a Cloudflare JS challenge to plain HTTP clients -- use a real browser.",
      "verified_at": "2026-10-18"},
     {"id": "g2", "name": "G2", "url": "https://www.g2.com/products/new",
-     "categories": ("saas", "general"), "account_free": True,
-     "note": "Review-site listing; most value once there are real reviews."},
+     "categories": ("saas", "general"), "account_free": False,
+     "note": "Review-site listing; most value once there are real reviews. Listing a product "
+             "requires a G2 seller/vendor account (via sell.g2.com) -- there is no account-free "
+             "path; the URL is also behind DataDome bot protection that blocks plain HTTP "
+             "verification.", "verified_at": "2026-10-21"},
     {"id": "capterra", "name": "Capterra", "url": "https://www.capterra.com/vendors/sign-up",
-     "categories": ("saas", "general"), "account_free": True,
-     "note": "B2B software directory; buyer-intent traffic."},
+     "categories": ("saas", "general"), "account_free": False,
+     "note": "B2B software directory; buyer-intent traffic. The submit URL is literally a vendor "
+             "sign-up page -- Capterra requires creating a vendor account before a listing can be "
+             "started; also behind a Cloudflare bot check that blocks plain HTTP verification.",
+     "verified_at": "2026-10-21"},
     {"id": "fazier", "name": "Fazier", "url": "https://fazier.com/launch",
      "categories": ("saas", "ai", "app", "general"), "account_free": True,
      "note": "Startup launch directory with SEO backlinks."},

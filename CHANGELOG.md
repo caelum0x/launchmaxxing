@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **`account_free` mistagged for 3 directories** -- `g2`, `capterra` and
+  `alternativeto` were tagged `account_free: True` even though their own
+  submit URLs are literally account/vendor sign-up pages
+  (`capterra.com/vendors/sign-up`, `g2.com` requires a seller account via
+  sell.g2.com, `alternativeto.net/account/add-software/`). This matters
+  because `directories --account-free` is the tool's own promise of "only
+  the ones you can submit to without creating an account anywhere in the
+  flow" -- these three broke that promise. Corrected to `account_free:
+  False` with notes explaining why.
+
 ## 0.2.1 -- 2026-10-18
 
 Dogfooded end-to-end on two real products (a live-traffic AI VTuber site and

@@ -76,7 +76,7 @@ def test_platforms_account_free_filters() -> None:
 
 def test_platforms_account_free_excludes_known_signup_required_entries() -> None:
     account_free_ids = {p["id"] for p in catalog.platforms_account_free(catalog.PLATFORMS)}
-    for platform_id in ("devhunt", "uneed", "turbo0"):
+    for platform_id in ("devhunt", "uneed", "turbo0", "g2", "capterra", "alternativeto"):
         assert platform_id not in account_free_ids
 
 

@@ -47,7 +47,8 @@ def test_directories_account_free_filter(tmp_path: Path, capsys: pytest.CaptureF
     data = json.loads(out)
     assert data["platforms"]
     assert all(p["account_free"] for p in data["platforms"])
-    assert not any(p["id"] in ("devhunt", "uneed", "turbo0") for p in data["platforms"])
+    assert not any(p["id"] in ("devhunt", "uneed", "turbo0", "g2", "capterra", "alternativeto")
+                   for p in data["platforms"])
 
 
 def test_directories_account_free_combines_with_category(tmp_path: Path,
