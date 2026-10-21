@@ -120,6 +120,28 @@ def test_twitter_launch_thread_without_url_has_no_link() -> None:
     assert not any("http" in tweet for tweet in thread)
 
 
+def test_twitter_launch_thread_enforces_280_char_limit_per_tweet() -> None:
+    # Regression: a long audience/problem/differentiator produced tweets well over
+    # Twitter/X's real 280-character-per-tweet limit (found a 365-char tweet in the
+    # thread), which is exactly what the "platform-correct copy" promise exists to
+    # prevent -- the generated thread would fail to post as-is.
+    profile = _profile(
+        problem="Founders waste hours manually retyping and reformatting launch copy for "
+                "every single different directory and platform out there, none of which "
+                "agree on tone or length limits",
+        audience="founders, small teams, indie software businesses, and Supabase, Neon "
+                  "and Resend developers who are trying to launch a brand-new SaaS product "
+                  "without an in-house marketing team",
+        differentiator="generates platform-correct copy locally with zero API key and zero "
+                        "LLM calls, deterministic output every single time you run it, unlike "
+                        "every other AI copy generator tool out there today",
+        url="https://launchmaxxing.example.com/really/long/path/for/this/product",
+    )
+    thread = content.twitter_launch_thread(profile)
+    for tweet in thread:
+        assert len(tweet) <= content.TWITTER_TWEET_MAX, f"{len(tweet)} chars: {tweet!r}"
+
+
 def test_reddit_post_leads_with_problem_and_mentions_product_once() -> None:
     result = content.reddit_post(_profile(subreddit="SaaS"))
     assert result["subreddit"] == "SaaS"

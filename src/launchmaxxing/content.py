@@ -25,6 +25,10 @@ from dataclasses import dataclass, field
 PRODUCT_HUNT_TAGLINE_MAX = 60
 PRODUCT_HUNT_DESCRIPTION_MAX = 260
 SHOW_HN_TITLE_MAX = 80
+#: X/Twitter's real per-post character limit. Every tweet in the generated launch thread is
+#: truncated to this so the thread this tool generates can actually be posted as-is, instead of
+#: silently overflowing for any profile with a longer-than-average problem/audience/differentiator.
+TWITTER_TWEET_MAX = 280
 
 #: Words real Show HN / Product Hunt guides call out as the tone that gets a post buried or
 #: silently rewritten by moderators. Stripped from generated titles; flagged (not auto-fixed, so
@@ -138,7 +142,7 @@ def twitter_launch_thread(profile: ProductProfile) -> list[str]:
     Real threads outperform single launch tweets because each tweet can be quote-tweeted on its
     own; this gives a human six real drafts to edit, not one generic blob."""
     link = f" {profile.url}" if profile.url else ""
-    return [
+    tweets = [
         f"Shipping {profile.name} today.{link}",
         f"The problem: {_collapse(profile.problem)}",
         f"{profile.audience} deal with this constantly, usually by cobbling together workarounds.",
@@ -149,6 +153,10 @@ def twitter_launch_thread(profile: ProductProfile) -> list[str]:
          f"{' at ' + profile.url if profile.url else ''}. Feedback (especially the "
          f"critical kind) is genuinely welcome."),
     ]
+    # X/Twitter hard-caps every post at TWITTER_TWEET_MAX chars; a long audience/problem/
+    # differentiator in the profile must not produce a tweet that would fail to post as-is.
+    return [_truncate(tweet, TWITTER_TWEET_MAX) if len(tweet) > TWITTER_TWEET_MAX else tweet
+            for tweet in tweets]
 
 
 def reddit_post(profile: ProductProfile) -> dict[str, str]:
@@ -195,6 +203,7 @@ def generate_all(profile: ProductProfile) -> dict[str, object]:
 
 __all__ = [
     "HYPE_WORDS", "PRODUCT_HUNT_DESCRIPTION_MAX", "PRODUCT_HUNT_TAGLINE_MAX", "SHOW_HN_TITLE_MAX",
-    "ProductProfile", "flag_hype_words", "generate_all", "linkedin_post", "product_hunt_description",
-    "product_hunt_tagline", "reddit_post", "show_hn_title", "twitter_launch_thread",
+    "TWITTER_TWEET_MAX", "ProductProfile", "flag_hype_words", "generate_all", "linkedin_post",
+    "product_hunt_description", "product_hunt_tagline", "reddit_post", "show_hn_title",
+    "twitter_launch_thread",
 ]
