@@ -86,6 +86,23 @@ def test_search_sorts_by_upvotes_descending() -> None:
     assert [t.upvotes for t in threads] == [99, 2]
 
 
+def test_search_caps_merged_results_to_requested_limit() -> None:
+    # Regression test: searching multiple subreddits merges each subreddit's own results, but the
+    # final cap used to be out[:max(per_sub_limit, MAX_LIMIT)] -- since per_sub_limit is always
+    # <= MAX_LIMIT (25), that max() always evaluated to MAX_LIMIT, so a caller-specified --limit
+    # smaller than 25 was silently ignored once results were merged across >1 subreddit (every
+    # subreddit's own matches survived instead of only the requested top N overall).
+    now = 1_700_000_000.0
+    transport = _FakeTransport([
+        _FakeResponse(200, {"data": {"children": [_child(f"/r/a/x/{i}", f"a{i}", 90 - i, now) for i in range(3)]}}),
+        _FakeResponse(200, {"data": {"children": [_child(f"/r/b/x/{i}", f"b{i}", 80 - i, now) for i in range(3)]}}),
+        _FakeResponse(200, {"data": {"children": [_child(f"/r/c/x/{i}", f"c{i}", 70 - i, now) for i in range(3)]}}),
+    ])
+    threads = reddit_search.search(transport, query="q", subreddits=["a", "b", "c"], limit=3, now=now)
+    assert len(threads) == 3
+    assert [t.upvotes for t in threads] == [90, 89, 88]
+
+
 def test_search_dedupes_by_permalink() -> None:
     now = 1_700_000_000.0
     transport = _FakeTransport([

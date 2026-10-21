@@ -102,7 +102,9 @@ def search(transport: Any, *, query: str, subreddits: list[str] | None = None, l
            now: float | None = None) -> list[RedditThread]:
     """Search Reddit for ``query``, globally or restricted to ``subreddits``. One call per
     subreddit (Reddit's search API has no "search these N subs at once" parameter); results are
-    merged and re-sorted by upvotes, highest first, deduped by permalink."""
+    merged and re-sorted by upvotes, highest first, deduped by permalink, then capped to
+    ``limit`` overall -- not per subreddit -- so a caller-specified ``limit`` is still honored
+    once results from multiple subreddits are combined."""
     q = str(query or "").strip()
     if not q:
         raise RedditSearchError("query is required", 422)
@@ -114,7 +116,7 @@ def search(transport: Any, *, query: str, subreddits: list[str] | None = None, l
         for thread in _fetch_one(transport, subreddit=sub, query=q, limit=per_sub_limit, now=moment):
             seen.setdefault(thread.permalink, thread)
     out = sorted(seen.values(), key=lambda t: t.upvotes, reverse=True)
-    return out[:max(per_sub_limit, MAX_LIMIT)]
+    return out[:per_sub_limit]
 
 
 def draft_reply(thread_title: str, snippet: str, product_name: str) -> str:
