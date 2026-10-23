@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.4 -- 2026-10-23
+
+### Added
+
+- **`portfolio --csv`.** Exports the cross-product rollup table to a CSV file (one row per
+  product, the same `directories_submitted`/`checklist_done`/`outreach_replied`/`days_since_active`
+  numbers the terminal table renders, as separate sortable columns instead of the combined
+  "3/10 (30%)" display strings) -- for a founder or studio's board update or spreadsheet,
+  the same export pattern `outreach list --csv`/`directories --export csv` already use.
+  `portfolio.write_csv`/`portfolio.CSV_FIELDS` are the new public API; `README.md` also gained
+  the `portfolio` feature bullet it was missing entirely since 0.3.0 introduced the command.
+
 ## 0.3.3 -- 2026-10-23
 
 ### Added

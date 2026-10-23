@@ -58,8 +58,9 @@ Seventeen pieces, each useful standalone:
   Windows balloon tip) the moment something newly breaks or goes stale, or
   emails the alert to you (``--notify-email``) when there's no native
   mechanism to pop a notification with, e.g. a headless server.
-* :mod:`launchmaxxing.portfolio` -- a cross-product rollup table for a
-  founder or studio running several simultaneous launches.
+* :mod:`launchmaxxing.portfolio` -- a cross-product rollup table (plus a
+  CSV export) for a founder or studio running several simultaneous
+  launches.
 * :mod:`launchmaxxing.compare` -- the factual competitor comparison table
   (vs. SubmitMap/OpenLaunch/SubmitFleet/paid services) as regenerable data,
   not hand-written prose that goes stale.
@@ -73,6 +74,6 @@ Seventeen pieces, each useful standalone:
 
 from __future__ import annotations
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 __all__ = ["__version__"]

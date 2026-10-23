@@ -112,6 +112,12 @@ after to track it.
   lacking one. `watch --notify-email you@example.com` also (or instead,
   on a headless server with no native notification mechanism) emails
   every alert to you via your own SMTP credentials.
+- **Cross-product portfolio rollup (`portfolio`)** -- one table summarizing
+  every product tracked locally (directory/checklist completion, outreach
+  replies, days since last touched), for a founder or small studio running
+  several launches at once instead of running `track` once per product by
+  hand. `portfolio --csv rollup.csv` exports the same rows for a board
+  update or spreadsheet.
 
 Nothing here auto-posts, auto-DMs, or emails anyone but *you* -- every
 outreach/press/community send is a draft a human reviews and sends

@@ -826,6 +826,10 @@ def _cmd_portfolio(args: argparse.Namespace) -> int:
     if args.json:
         _print(result, as_json=True)
         return 0
+    if args.csv:
+        csv_path = portfolio.write_csv(result["products"], Path(args.csv).expanduser())
+        print(f"Wrote {result['count']} product(s) to {csv_path}")
+        return 0
     if result["count"] == 0:
         print("No products tracked yet -- run 'launchmaxxing init \"My Product\"' to start one.")
         return 0
@@ -1348,6 +1352,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_portfolio = sub.add_parser("portfolio", help="Cross-product rollup table for every product "
                                                    "tracked locally -- for running several launches at once.")
     p_portfolio.add_argument("--stale-days", type=int, default=track.DEFAULT_STALE_DAYS)
+    p_portfolio.add_argument("--csv", default=None, help="Write the rollup table to this CSV "
+                             "file (one row per product) instead of printing it -- for a "
+                             "board update or spreadsheet.")
     _add_common(p_portfolio)
     p_portfolio.set_defaults(func=_cmd_portfolio)
 

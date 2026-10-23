@@ -12,11 +12,24 @@ in either store and assembled into rows.
 
 from __future__ import annotations
 
+import csv
 import sqlite3
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from launchmaxxing import catalog, checklist, db, state
+
+#: Columns :func:`write_csv` writes, in the same order :func:`build` returns in each row --
+#: everything a founder or studio lead would want in a spreadsheet/board-deck export of the
+#: rollup table ``portfolio`` prints, nothing derived only for the terminal's display formatting
+#: (e.g. the combined "3/10 (30%)" strings the text renderer builds -- a spreadsheet wants the
+#: numerator/denominator/percentage as separate sortable columns instead).
+CSV_FIELDS = (
+    "product_name", "directories_submitted", "directories_total", "directories_pct",
+    "checklist_done", "checklist_total", "checklist_pct", "outreach_total", "outreach_replied",
+    "last_active", "days_since_active", "stale",
+)
 
 #: Tables (and their own "last touched" column) that can contain activity for a product that was
 #: never written to the JSON state file at all -- e.g. a product only ever used via
@@ -99,4 +112,19 @@ def build(app_state: dict[str, Any], conn: sqlite3.Connection, *, stale_days: in
     return {"products": rows, "count": len(rows), "stale_days": stale_days}
 
 
-__all__ = ["all_product_names", "build"]
+def write_csv(rows: list[dict[str, Any]], path: Path | str) -> Path:
+    """Write the portfolio rollup's ``rows`` (as returned by :func:`build`'s ``"products"`` key)
+    to a CSV file at ``path`` with a header row -- for a founder/studio's board update or
+    spreadsheet, the same export pattern :mod:`launchmaxxing.outreach`'s
+    ``write_contacts_csv``/:mod:`launchmaxxing.catalog`'s ``export_csv`` already use. Returns the
+    resolved :class:`~pathlib.Path` written to."""
+    out_path = Path(path)
+    with out_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row.get(key, "") for key in CSV_FIELDS})
+    return out_path
+
+
+__all__ = ["CSV_FIELDS", "all_product_names", "build", "write_csv"]
