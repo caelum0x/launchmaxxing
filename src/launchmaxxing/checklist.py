@@ -14,9 +14,9 @@ already recorded:
   ``not_contacted`` (i.e. :mod:`launchmaxxing.outreach`/``outreach add`` or
   ``outreach status`` recorded real contact activity).
 * ``reddit_pain_points`` -- done once any saved pain-point draft (from
-  ``pain-points``, across any source -- Reddit, Hacker News, Indie Hackers)
-  has been reviewed (``approved`` or ``dismissed``, never just left
-  ``drafted``).
+  ``pain-points``, across any source -- Reddit, Hacker News, Stack
+  Overflow, Indie Hackers) has been reviewed (``approved`` or
+  ``dismissed``, never just left ``drafted``).
 
 Every other step still has no independent signal to derive from (there is
 nothing elsewhere in the data model that proves a demo video got recorded,

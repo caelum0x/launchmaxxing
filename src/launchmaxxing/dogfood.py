@@ -35,8 +35,9 @@ LAUNCHMAXXING_PROFILE = content.ProductProfile(
     audience="founders and small teams launching a SaaS, AI tool or dev tool who do not want "
              "another paid dashboard or account",
     differentiator="82 real launch directories, local SQLite+JSON tracking, template-based copy "
-                   "generation, Reddit/HN/Indie Hackers pain-point search and an HTML dashboard "
-                   "-- entirely offline, zero account required for any launchmaxxing feature",
+                   "generation, Reddit/HN/Stack Overflow/Indie Hackers pain-point search and an "
+                   "HTML dashboard -- entirely offline, zero account required for any "
+                   "launchmaxxing feature",
     url="https://github.com/caelum0x/launchmaxxing",
     pricing="Free and MIT-licensed",
     subreddit="SideProject",
