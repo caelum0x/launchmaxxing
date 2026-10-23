@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.5 -- 2026-10-23
+
+### Added
+
+- **`backlinks` now accepts `--category`/`--account-free`, same as `directories`.**
+  Previously `backlinks <domain>`'s free fallback always returned all 24 catalog
+  directories regardless of the competitor's actual category, even though `directories`
+  has supported `--category`/`--account-free` filtering since 0.1. A founder in `ai` or
+  `dev_tool` got the same generic "submit here too" list as a general SaaS founder,
+  diluting the one piece of free value `backlinks` offers when no CrawlGraph/DataForSEO
+  key is configured (the common case -- neither is set up yet for this repo). Added
+  `category`/`account_free_only` params to `backlinks.fetch()`/`_fallback()` (ignored
+  once a live provider answers, since live rows come from the real link graph, not the
+  catalog) and matching `--category`/`--account-free` flags on the CLI. 6 new tests
+  (`test_backlinks.py`, `test_cli.py`); 212/212 passing.
+
 ## 0.2.4 -- 2026-10-22
 
 ### Fixed

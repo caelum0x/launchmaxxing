@@ -229,7 +229,8 @@ def _cmd_checklist_step(args: argparse.Namespace) -> int:
 def _cmd_backlinks(args: argparse.Namespace) -> int:
     transport = RequestsTransport() if args.allow_live else None
     try:
-        result = backlinks.fetch(args.domain, transport=transport, allow_live=args.allow_live)
+        result = backlinks.fetch(args.domain, transport=transport, allow_live=args.allow_live,
+                                 category=args.category, account_free_only=args.account_free)
     except backlinks.BacklinkError as exc:
         print(f"error: {exc.message}", file=sys.stderr)
         return 1
@@ -619,6 +620,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_back.add_argument("domain")
     p_back.add_argument("--allow-live", action="store_true",
                         help="Spend a real API call (needs CRAWLGRAPH_API_KEY or DATAFORSEO_LOGIN/PASSWORD).")
+    p_back.add_argument("--category", default=None, choices=(*catalog.all_categories(), None), metavar="CATEGORY",
+                        help="Narrow the free fallback's directory list to one category, e.g. 'ai'.")
+    p_back.add_argument("--account-free", action="store_true", dest="account_free",
+                        help="Narrow the free fallback's directory list to account-free directories only.")
     _add_common(p_back)
     p_back.set_defaults(func=_cmd_backlinks)
 

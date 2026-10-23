@@ -7,7 +7,16 @@ from typing import Any
 
 import pytest
 
-from launchmaxxing import backlinks, cli, db, linkcheck, outreach, reddit_search, utm
+from launchmaxxing import (
+    backlinks,
+    catalog,
+    cli,
+    db,
+    linkcheck,
+    outreach,
+    reddit_search,
+    utm,
+)
 
 
 def _run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, args: list[str]) -> int:
@@ -178,12 +187,40 @@ def test_backlinks_invalid_domain_errors(tmp_path: Path, capsys: pytest.CaptureF
     assert "error" in capsys.readouterr().err
 
 
+def test_backlinks_category_narrows_fallback_directories(tmp_path: Path, capsys: pytest.CaptureFixture[str],
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CRAWLGRAPH_API_KEY", raising=False)
+    monkeypatch.delenv("DATAFORSEO_LOGIN", raising=False)
+    code = _run(None, tmp_path, ["backlinks", "competitor.com", "--category", "oss", "--json"])
+    data = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert data["category"] == "oss"
+    all_ids = {p["id"] for p in catalog.PLATFORMS}
+    oss_ids = {p["id"] for p in catalog.platforms_for_category("oss")}
+    assert oss_ids < all_ids
+    assert {p["id"] for p in data["fallback_directories"]} == oss_ids
+
+
+def test_backlinks_account_free_narrows_fallback_directories(tmp_path: Path, capsys: pytest.CaptureFixture[str],
+                                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CRAWLGRAPH_API_KEY", raising=False)
+    monkeypatch.delenv("DATAFORSEO_LOGIN", raising=False)
+    code = _run(None, tmp_path, ["backlinks", "competitor.com", "--account-free", "--json"])
+    data = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert data["account_free_only"] is True
+    assert all(p["id"] in {ap["id"] for ap in catalog.platforms_account_free(catalog.PLATFORMS)}
+               for p in data["fallback_directories"])
+    assert len(data["fallback_directories"]) < len(catalog.PLATFORMS)
+
+
 def test_backlinks_allow_live_uses_configured_provider(tmp_path: Path, capsys: pytest.CaptureFixture[str],
                                                         monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CRAWLGRAPH_API_KEY", "key")
 
     def fake_fetch(domain: str, *, transport: Any = None, allow_live: bool = False,
-                   env: dict[str, str] | None = None) -> dict[str, Any]:
+                   env: dict[str, str] | None = None, category: str | None = None,
+                   account_free_only: bool = False) -> dict[str, Any]:
         assert allow_live is True
         return {"domain": domain, "live": True, "configured": True, "backlinks": [], "fallback_directories": [],
                 "provider": "crawlgraph", "message": "ok"}

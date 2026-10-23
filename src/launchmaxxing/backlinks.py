@@ -63,12 +63,16 @@ def configured(env: dict[str, str] | None = None) -> bool:
     return _crawlgraph_configured(source) or _dataforseo_configured(source)
 
 
-def _fallback(domain: str, *, env: dict[str, str] | None = None) -> dict[str, Any]:
+def _fallback(domain: str, *, env: dict[str, str] | None = None, category: str | None = None,
+              account_free_only: bool = False) -> dict[str, Any]:
     source = os.environ if env is None else env
-    directories = catalog.platforms_for_category(None)
+    directories = catalog.platforms_for_category(category)
+    if account_free_only:
+        directories = catalog.platforms_account_free(directories)
     is_configured = _crawlgraph_configured(source) or _dataforseo_configured(source)
     return {
         "domain": domain, "live": False, "configured": is_configured, "backlinks": [],
+        "category": category or "", "account_free_only": account_free_only,
         "fallback_directories": [{"id": p["id"], "name": p["name"], "url": p["url"]} for p in directories],
         "message": SETUP_STEP if not is_configured else
         "A key is configured but allow_live was not set, so no credits/quota were spent. "
@@ -128,16 +132,20 @@ def _fetch_dataforseo(domain: str, *, transport: Any, login: str, password: str)
 
 
 def fetch(domain: str, *, transport: Any = None, allow_live: bool = False,
-          env: dict[str, str] | None = None) -> dict[str, Any]:
+          env: dict[str, str] | None = None, category: str | None = None,
+          account_free_only: bool = False) -> dict[str, Any]:
     """Backlinks pointing at ``domain``. Returns the free fallback (never spends credits/quota)
     unless a key is configured AND ``allow_live`` is explicitly True. Prefers CrawlGraph (free)
-    over DataForSEO (paid) when both are configured."""
+    over DataForSEO (paid) when both are configured. ``category``/``account_free_only`` narrow
+    the fallback's ``fallback_directories`` list the same way ``directories --category``/
+    ``--account-free`` narrow the main catalog listing -- ignored once a live provider answers,
+    since live backlink rows come from the competitor's real link graph, not the catalog."""
     clean = str(domain or "").strip().lower().removeprefix("https://").removeprefix("http://").strip("/")
     if not clean or "." not in clean:
         raise BacklinkError("domain must look like example.com", 422)
     source = os.environ if env is None else env
     if not allow_live:
-        return _fallback(clean, env=env)
+        return _fallback(clean, env=env, category=category, account_free_only=account_free_only)
     crawlgraph_key = str(source.get(CRAWLGRAPH_API_KEY_ENV) or "").strip()
     if crawlgraph_key:
         return _fetch_crawlgraph(clean, transport=transport, api_key=crawlgraph_key)
@@ -145,7 +153,7 @@ def fetch(domain: str, *, transport: Any = None, allow_live: bool = False,
         login = str(source.get(DATAFORSEO_LOGIN_ENV) or "")
         password = str(source.get(DATAFORSEO_PASSWORD_ENV) or "")
         return _fetch_dataforseo(clean, transport=transport, login=login, password=password)
-    return _fallback(clean, env=env)
+    return _fallback(clean, env=env, category=category, account_free_only=account_free_only)
 
 
 __all__ = ["SETUP_STEP", "BacklinkError", "configured", "fetch"]

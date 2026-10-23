@@ -214,6 +214,7 @@ launchmaxxing report "My Product"
 
 # Competitor backlinks (free fallback by default)
 launchmaxxing backlinks competitor.com
+launchmaxxing backlinks competitor.com --category ai --account-free  # narrow the free fallback list
 CRAWLGRAPH_API_KEY=... launchmaxxing backlinks competitor.com --allow-live
 
 # Reddit pain-point threads + draft replies (read-only, nothing is posted)

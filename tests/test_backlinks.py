@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from launchmaxxing import backlinks
+from launchmaxxing import backlinks, catalog
 
 
 class _FakeResponse:
@@ -108,3 +108,33 @@ def test_fetch_live_dataforseo_success() -> None:
 def test_fetch_strips_scheme_and_trailing_slash() -> None:
     result = backlinks.fetch("https://Example.com/", env={})
     assert result["domain"] == "example.com"
+
+
+def test_fetch_fallback_narrows_by_category() -> None:
+    result = backlinks.fetch("example.com", env={}, category="oss")
+    oss_ids = {p["id"] for p in catalog.platforms_for_category("oss")}
+    assert result["category"] == "oss"
+    assert {row["id"] for row in result["fallback_directories"]} == oss_ids
+    assert len(result["fallback_directories"]) < len(catalog.PLATFORMS)
+
+
+def test_fetch_fallback_narrows_by_account_free() -> None:
+    result = backlinks.fetch("example.com", env={}, account_free_only=True)
+    free_ids = {p["id"] for p in catalog.platforms_account_free(catalog.PLATFORMS)}
+    assert result["account_free_only"] is True
+    assert {row["id"] for row in result["fallback_directories"]} == free_ids
+    assert len(result["fallback_directories"]) < len(catalog.PLATFORMS)
+
+
+def test_fetch_fallback_category_and_account_free_combine() -> None:
+    result = backlinks.fetch("example.com", env={}, category="saas", account_free_only=True)
+    expected = {p["id"] for p in catalog.platforms_account_free(catalog.platforms_for_category("saas"))}
+    assert {row["id"] for row in result["fallback_directories"]} == expected
+
+
+def test_fetch_live_ignores_category_and_account_free() -> None:
+    transport = _FakeTransport(_FakeResponse(200, {"results": []}))
+    result = backlinks.fetch("example.com", transport=transport, allow_live=True,
+                             env={"CRAWLGRAPH_API_KEY": "key"}, category="oss", account_free_only=True)
+    assert result["live"] is True
+    assert result["fallback_directories"] == []
