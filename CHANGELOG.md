@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.1 -- 2026-10-23
+
+### Added
+
+- **Real mail-merge batch mode for `outreach`.** Two new commands close the loop started by
+  `outreach list --csv`: `outreach import <product> <csv_file>` bulk-adds contacts from a CSV
+  (case-insensitive header matching, dedupes against already-tracked contacts by email/handle so
+  re-importing an updated list never creates duplicates, skips malformed rows with a reason
+  instead of aborting the file), and `outreach send-batch <product>` actually drafts and sends
+  the channel-appropriate message to every tracked contact matching `--status`/`--channel` with a
+  resolvable email, one real SMTP send per contact with a polite `--delay` between sends,
+  `--limit` to cap a run, `--resend` to intentionally re-send, and `--dry-run` to preview a whole
+  batch without opening an SMTP connection. The to-email resolution logic (explicit override ->
+  `email` column -> `handle` when it looks like one) is now a single shared
+  `outreach.resolve_recipient_email`, used by both the original single `outreach send` and the
+  new batch command so the two can never drift.
+- **Cross-platform native notifications for `watch`.** `watch.notify` now works on Linux
+  (`notify-send`, detected at import time so a headless box without a notification daemon
+  correctly reports `NOTIFY_SUPPORTED = False` instead of silently failing every poll) and Windows
+  (a one-shot PowerShell `System.Windows.Forms.NotifyIcon` balloon tip, no extra module required)
+  in addition to the existing macOS `osascript` support -- `watch` fires a real native popup on
+  all three platforms it's actually likely to run on, not just macOS.
+- **Hand-curated UTM defaults for all 82 catalog entries.** The 58 directories added in 0.3.0
+  (AI-tool directories, browser-extension stores, API marketplaces, newsletter sponsor slots,
+  Slack/Discord community lists, integration marketplaces, review sites, and four more
+  subreddits) now have a real per-platform `utm_source`/`utm_medium` pair in
+  `utm.PLATFORM_UTM_DEFAULTS` (e.g. `chrome_web_store` -> `extension_store`, `rapidapi` ->
+  `api_marketplace`, `appsumo_partners` -> `marketplace`) instead of falling back to the generic
+  id-derived default every one of them previously used.
+
 ## 0.3.0 -- 2026-10-23
 
 ### Added

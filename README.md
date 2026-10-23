@@ -72,12 +72,19 @@ after to track it.
 - **Local outreach pipeline (`outreach`)** -- track creator/press/
   community/user contacts with a status (not_contacted/contacted/replied/
   booked/declined) in the local database, plus a cold-outreach message
-  draft per channel; `outreach list --csv contacts.csv` exports the tracked
-  contacts for Gmail mail-merge or a spreadsheet.
+  draft per channel; `outreach send <contact_id>` actually sends a drafted
+  message via your own SMTP credentials and records delivery status.
+  `outreach list --csv contacts.csv` exports tracked contacts for a
+  spreadsheet, and `outreach import "My Product" contacts.csv` bulk-adds
+  them back (deduped by email/handle, so re-importing an updated list never
+  creates duplicates) -- the real mail-merge loop. `outreach send-batch
+  "My Product"` then drafts and actually sends to every matching contact
+  with an email on file, one real SMTP send at a time with a polite
+  `--delay`, `--limit` to cap a run, and `--dry-run` to preview first.
 - **Local UTM link builder (`utm`)** -- this tool has no server to receive
   clicks, so instead of faking analytics it builds correctly tagged links
-  (with sensible per-directory source/medium defaults for most catalog
-  entries, falling back to deriving one from the platform id for the rest) and saves them locally, so you know which exact link you used
+  (hand-curated per-directory source/medium defaults for all 82 catalog
+  entries) and saves them locally, so you know which exact link you used
   where. Paste the result into whatever analytics you already run;
   `utm list --csv links.csv` exports the saved links to a CSV file.
 - **Shareable one-page launch report (`report`)** -- a Markdown summary of
@@ -92,6 +99,12 @@ after to track it.
   list); add your own free [CrawlGraph](https://crawlgraph.com) API key
   (15 calls/month, no card) or a DataForSEO account for live backlink
   data. Never spends API credits unless you pass `--allow-live`.
+- **Always-on watcher (`watch`)** -- polls the catalog's link health and
+  outreach/directory staleness on an interval and fires a real native
+  notification the moment something newly breaks: macOS Notification
+  Center, Linux `notify-send`, or a Windows balloon tip. Falls back to a
+  stdout log line anywhere none of those is available; never crashes for
+  lacking one.
 
 Nothing here auto-posts, auto-emails or auto-DMs anything, anywhere. Every
 write is local, and every "share this" action is a draft a human reviews

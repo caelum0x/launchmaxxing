@@ -24,7 +24,10 @@ Seventeen pieces, each useful standalone:
 * :mod:`launchmaxxing.outreach` -- cold-outreach message drafts per channel
   (creator/press/community/user), paired with the SQLite contact pipeline,
   plus actually *sending* a drafted message via the user's own SMTP
-  credentials (zero third-party account).
+  credentials (zero third-party account), a CSV mail-merge importer for
+  bulk-adding contacts, and a batch sender that mail-merges and actually
+  sends to every matching tracked contact with a polite delay between
+  sends.
 * :mod:`launchmaxxing.utm` -- a local UTM link builder so you know which
   tagged link you used where, for whatever analytics you already run.
 * :mod:`launchmaxxing.report` -- a shareable launch summary assembled from
@@ -50,7 +53,8 @@ Seventeen pieces, each useful standalone:
   submitting and hitting a 404.
 * :mod:`launchmaxxing.watch` -- an always-on background poll that re-runs
   the link-check/stale-reminder detection on an interval and fires a native
-  macOS notification the moment something newly breaks or goes stale.
+  notification (macOS Notification Center, Linux ``notify-send``, or a
+  Windows balloon tip) the moment something newly breaks or goes stale.
 * :mod:`launchmaxxing.portfolio` -- a cross-product rollup table for a
   founder or studio running several simultaneous launches.
 * :mod:`launchmaxxing.compare` -- the factual competitor comparison table
@@ -66,6 +70,6 @@ Seventeen pieces, each useful standalone:
 
 from __future__ import annotations
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 __all__ = ["__version__"]

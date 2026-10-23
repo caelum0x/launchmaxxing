@@ -4,15 +4,24 @@ stale-outreach reminders) on an interval and fires a native OS notification the 
 *newly* changes, instead of requiring a human to remember to run ``directories --check-links`` or
 ``track`` by hand. Turns already-built detection logic into an always-on signal.
 
-Notifications are native macOS notifications via ``osascript -e 'display notification'`` -- no
-account, no push-notification service, no server. On any other platform, ``watch`` still runs and
-still logs every detected change to stdout, it just can't pop a native OS notification; it never
-crashes for lacking one.
-"""
+Notifications are native, with no account, no push-notification service and no server, on every
+platform launchmaxxing supports:
+
+- **macOS**: ``osascript -e 'display notification'`` (Notification Center).
+- **Linux**: ``notify-send`` (the ``libnotify`` CLI most desktop distros -- GNOME, KDE, XFCE --
+  already ship; a headless/server Linux box without it just doesn't have a notification daemon
+  to notify, same as macOS without Notification Center).
+- **Windows**: a one-shot PowerShell ``System.Windows.Forms.NotifyIcon`` balloon tip -- uses only
+  the .NET Forms assembly every Windows 10/11 install already has, no extra module to install.
+
+If none of the above is available (an unrecognized platform, or the expected native tool is
+missing), ``watch`` still runs and still logs every detected change to stdout; it never crashes
+for lacking a way to pop a native popup."""
 
 from __future__ import annotations
 
 import platform
+import shutil
 import subprocess
 import time
 from collections.abc import Callable
@@ -26,7 +35,17 @@ from launchmaxxing.transport import RequestsTransport
 #: going dead or a contact going stale within the same working session, infrequent enough not to
 #: hammer every catalog submit URL (or whichever --category subset) on a tight loop.
 DEFAULT_INTERVAL_S = 900
-NOTIFY_SUPPORTED = platform.system() == "Darwin"
+
+_PLATFORM = platform.system()
+#: Whether :func:`notify` can actually pop a native OS notification on this machine. On Linux this
+#: also depends on ``notify-send`` being installed (most desktops have it; a bare server distro
+#: usually doesn't), so this is computed once at import time rather than being a static per-OS
+#: constant -- a Linux box genuinely without a notification daemon should see this as ``False``,
+#: not silently try and fail every poll cycle.
+NOTIFY_SUPPORTED = (
+    _PLATFORM in ("Darwin", "Windows")
+    or (_PLATFORM == "Linux" and shutil.which("notify-send") is not None)
+)
 
 
 def _osa_quote(text: str) -> str:
@@ -34,16 +53,63 @@ def _osa_quote(text: str) -> str:
     return f'"{escaped}"'
 
 
+def _powershell_quote(text: str) -> str:
+    """Quote ``text`` as a single-quoted PowerShell string literal -- the only special case is a
+    literal single quote, which PowerShell escapes by doubling it (unlike backslash-escaping in
+    shells like bash or AppleScript)."""
+    return "'" + text.replace("'", "''") + "'"
+
+
+def _notify_macos(title: str, message: str, run: Callable[..., Any]) -> None:
+    script = f"display notification {_osa_quote(message)} with title {_osa_quote(title)}"
+    run(["osascript", "-e", script], check=False, capture_output=True)
+
+
+def _notify_linux(title: str, message: str, run: Callable[..., Any]) -> None:
+    run(["notify-send", "--app-name=launchmaxxing", title, message], check=False, capture_output=True)
+
+
+def _notify_windows(title: str, message: str, run: Callable[..., Any]) -> None:
+    """Pop a Windows balloon-tip notification via a throwaway PowerShell process -- no extra
+    module (no BurntToast, no pywin32) required, just the ``System.Windows.Forms`` assembly every
+    Windows 10/11 install already ships. The notify icon is kept alive with ``Start-Sleep`` for
+    long enough for the balloon to actually render before the process (and the icon with it)
+    exits; disposing it immediately would often race the balloon off-screen before a user ever
+    saw it."""
+    script = (
+        "Add-Type -AssemblyName System.Windows.Forms; "
+        "Add-Type -AssemblyName System.Drawing; "
+        "$n = New-Object System.Windows.Forms.NotifyIcon; "
+        "$n.Icon = [System.Drawing.SystemIcons]::Information; "
+        "$n.Visible = $true; "
+        f"$n.ShowBalloonTip(8000, {_powershell_quote(title)}, {_powershell_quote(message)}, "
+        "[System.Windows.Forms.ToolTipIcon]::Info); "
+        "Start-Sleep -Seconds 8; "
+        "$n.Dispose();"
+    )
+    run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script], check=False, capture_output=True)
+
+
+#: Dispatch table from :func:`platform.system`'s return value to the notifier that knows how to
+#: talk to that OS's native notification mechanism.
+_NOTIFIERS: dict[str, Callable[[str, str, Callable[..., Any]], None]] = {
+    "Darwin": _notify_macos, "Linux": _notify_linux, "Windows": _notify_windows,
+}
+
+
 def notify(title: str, message: str, *, runner: Callable[..., Any] | None = None) -> bool:
-    """Fire one native macOS notification. Returns ``True`` if a notification was actually sent,
-    ``False`` if notifications aren't supported on this platform (anything but macOS) -- callers
-    should still log the same message to stdout either way, so ``watch`` stays useful everywhere
-    even where a native popup isn't available."""
+    """Fire one native OS notification (macOS Notification Center, Linux ``notify-send``, or a
+    Windows balloon tip -- see :data:`NOTIFY_SUPPORTED`). Returns ``True`` if a notification was
+    actually attempted, ``False`` if this platform has no supported native mechanism available --
+    callers should still log the same message to stdout either way, so ``watch`` stays useful
+    everywhere even where a native popup isn't available."""
     if not NOTIFY_SUPPORTED:
         return False
-    script = f"display notification {_osa_quote(message)} with title {_osa_quote(title)}"
+    notifier = _NOTIFIERS.get(_PLATFORM)
+    if notifier is None:
+        return False
     run = runner or subprocess.run
-    run(["osascript", "-e", script], check=False, capture_output=True)
+    notifier(title, message, run)
     return True
 
 

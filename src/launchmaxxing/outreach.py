@@ -146,6 +146,70 @@ def draft_message(channel: str, profile: ProductProfile, *, contact_name: str = 
     )
 
 
+def resolve_recipient_email(contact: dict[str, Any], explicit_to: str = "") -> str:
+    """The one place that decides who an outreach send actually goes to -- shared by
+    :mod:`launchmaxxing.cli`'s single ``outreach send`` and batch ``outreach send-batch``, so the
+    precedence rule (explicit override, then the contact's own ``email`` column, then its
+    ``handle`` when that handle itself looks like an email address) can never drift between the
+    two. Returns ``""`` when nothing usable is on file -- callers decide whether that means skip
+    or error."""
+    explicit = explicit_to.strip()
+    if explicit:
+        return explicit
+    email = str(contact.get("email") or "").strip()
+    if email:
+        return email
+    handle = str(contact.get("handle") or "").strip()
+    return handle if "@" in handle else ""
+
+
+def contact_key(row: dict[str, Any]) -> str:
+    """A lower-cased dedupe key for :func:`read_contacts_csv`'s mail-merge import loop: prefer
+    ``email``, fall back to ``handle``. Re-importing the same source CSV (or an updated superset
+    of it, e.g. a refreshed lead list that still contains everyone already tracked) never creates
+    duplicate contacts for a product, because the importer skips any row whose key already
+    matches an existing contact."""
+    email = str(row.get("email") or "").strip().lower()
+    if email:
+        return email
+    return str(row.get("handle") or "").strip().lower()
+
+
+#: Columns :func:`read_contacts_csv` reads, in the order it looks them up (case-insensitive
+#: header match) -- ``name`` and ``channel`` are required, the rest are optional.
+IMPORT_FIELDS = ("name", "channel", "handle", "email", "status", "note")
+IMPORT_REQUIRED_FIELDS = ("name", "channel")
+
+
+def read_contacts_csv(path: Path | str) -> list[dict[str, str]]:
+    """Parse a CSV of contacts for ``outreach import`` -- the other half of the mail-merge loop
+    that starts with ``outreach list --csv``: export tracked contacts, add/enrich rows in a
+    spreadsheet (or hand it a CSV from wherever a lead list actually came from), import back.
+    Header matching is case-insensitive and both headers and values are stripped of surrounding
+    whitespace, so a real spreadsheet export's quirks (extra whitespace, ``Name`` vs ``name``)
+    don't silently drop every row. Raises :class:`ValueError` if the required ``name``/``channel``
+    columns aren't present at all; a blank value in a required column on one row just drops that
+    row rather than failing the whole import."""
+    in_path = Path(path)
+    with in_path.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        if reader.fieldnames is None:
+            return []
+        header_map = {(name or "").strip().lower(): name for name in reader.fieldnames}
+        missing = [field for field in IMPORT_REQUIRED_FIELDS if field not in header_map]
+        if missing:
+            raise ValueError(f"CSV is missing required column(s): {', '.join(missing)}")
+        rows: list[dict[str, str]] = []
+        for raw_row in reader:
+            row: dict[str, str] = {}
+            for field in IMPORT_FIELDS:
+                source_key = header_map.get(field)
+                row[field] = str(raw_row.get(source_key) or "").strip() if source_key else ""
+            if any(row.values()):  # skip fully-blank spreadsheet rows, keep partially-filled ones
+                rows.append(row)
+        return rows
+
+
 def write_contacts_csv(rows: Sequence[dict[str, Any]], path: Path | str) -> Path:
     """Write tracked outreach ``rows`` (as returned by :func:`launchmaxxing.db.list_outreach_contacts`)
     to a CSV file at ``path`` with a header row, so a founder can import contacts into Gmail
@@ -160,7 +224,8 @@ def write_contacts_csv(rows: Sequence[dict[str, Any]], path: Path | str) -> Path
 
 
 __all__ = [
-    "CSV_FIELDS", "DEFAULT_SMTP_PORT", "SMTP_FROM_ENV", "SMTP_HOST_ENV", "SMTP_PASSWORD_ENV",
-    "SMTP_PORT_ENV", "SMTP_SETUP_STEP", "SMTP_USER_ENV", "SMTP_USE_SSL_ENV", "OutreachSendError",
-    "draft_message", "send_email", "smtp_configured", "write_contacts_csv",
+    "CSV_FIELDS", "DEFAULT_SMTP_PORT", "IMPORT_FIELDS", "IMPORT_REQUIRED_FIELDS", "SMTP_FROM_ENV",
+    "SMTP_HOST_ENV", "SMTP_PASSWORD_ENV", "SMTP_PORT_ENV", "SMTP_SETUP_STEP", "SMTP_USER_ENV",
+    "SMTP_USE_SSL_ENV", "OutreachSendError", "contact_key", "draft_message", "read_contacts_csv",
+    "resolve_recipient_email", "send_email", "smtp_configured", "write_contacts_csv",
 ]

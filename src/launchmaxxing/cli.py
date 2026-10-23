@@ -15,6 +15,7 @@ import argparse
 import json
 import re
 import sys
+import time
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -502,7 +503,7 @@ def _cmd_outreach_send(args: argparse.Namespace) -> int:
         if contact is None:
             print(f"error: contact not found: {args.contact_id!r}", file=sys.stderr)
             return 1
-        to_email = (args.to or contact["email"] or (contact["handle"] if "@" in contact["handle"] else "")).strip()
+        to_email = outreach.resolve_recipient_email(contact, args.to or "")
         if not to_email:
             print(f"error: no email address on file for {contact['name']!r} -- pass --to "
                   "you@example.com, or set one next time with 'outreach add --email'.", file=sys.stderr)
@@ -548,6 +549,141 @@ def _cmd_outreach_draft(args: argparse.Namespace) -> int:
         _print({"channel": args.channel, "message": message}, as_json=True)
         return 0
     print(message)
+    return 0
+
+
+def _cmd_outreach_import(args: argparse.Namespace) -> int:
+    """``outreach import <product> <csv_file>``: bulk-add contacts from a CSV -- the other half of
+    the mail-merge loop started by ``outreach list --csv`` (export what's tracked, add/enrich rows
+    in a spreadsheet or hand it a CSV from wherever a real lead list came from, import back). Rows
+    whose ``email``/``handle`` already matches a contact already tracked for this product are
+    skipped (so re-importing an updated source list never creates duplicates); rows missing a
+    required field are skipped with a reason instead of aborting the whole file."""
+    try:
+        new_rows = outreach.read_contacts_csv(Path(args.csv_file).expanduser())
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    conn = db.connect(_db_path(args))
+    added: list[dict[str, Any]] = []
+    skipped: list[dict[str, str]] = []
+    try:
+        existing_keys = {outreach.contact_key(c) for c in db.list_outreach_contacts(conn, product_name=args.product)}
+        existing_keys.discard("")
+        for row in new_rows:
+            if not row["name"] or not row["channel"]:
+                skipped.append({**row, "reason": "missing required name/channel column value"})
+                continue
+            key = outreach.contact_key(row)
+            if key and key in existing_keys:
+                skipped.append({**row, "reason": "duplicate email/handle already tracked for this product"})
+                continue
+            try:
+                added_row = db.add_outreach_contact(
+                    conn, product_name=args.product, name=row["name"], channel=row["channel"],
+                    handle=row.get("handle", ""), status=row.get("status") or "not_contacted",
+                    note=row.get("note", ""), email=row.get("email", ""),
+                )
+            except ValueError as exc:
+                skipped.append({**row, "reason": str(exc)})
+                continue
+            added.append(added_row)
+            if key:
+                existing_keys.add(key)
+    finally:
+        conn.close()
+    if args.json:
+        _print({"added": added, "skipped": skipped}, as_json=True)
+        return 0
+    print(f"Imported {len(added)} contact(s) for {args.product!r} from {args.csv_file}.")
+    for row in added:
+        print(f"  + {row['id']} {row['name']} ({row['channel']})")
+    if skipped:
+        print(f"\nSkipped {len(skipped)} row(s):")
+        for row in skipped:
+            print(f"  - {row.get('name') or '(blank)'}: {row['reason']}")
+    return 0
+
+
+def _cmd_outreach_send_batch(args: argparse.Namespace) -> int:
+    """``outreach send-batch <product>``: real mail-merge batch mode -- drafts and actually sends
+    the channel-appropriate cold-outreach message (:func:`launchmaxxing.outreach.draft_message`,
+    the exact text ``outreach draft``/``outreach send`` would use) to every tracked contact
+    matching ``--status``/``--channel`` that has a resolvable email, one real SMTP send per
+    contact with a polite ``--delay`` between sends so a whole list doesn't hit a mail provider's
+    rate limiter (or a recipient's spam filter) in one burst. Contacts already marked ``sent`` are
+    skipped unless ``--resend`` is passed, so re-running the same batch command after it stops
+    partway (``--limit``) picks up exactly where it left off instead of double-sending.
+    ``--dry-run`` drafts and reports who/what would be sent without opening an SMTP connection or
+    writing anything -- the way to sanity-check a big list before actually firing it."""
+    try:
+        profile = _build_profile(args)
+    except (ValueError, OSError, json.JSONDecodeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    if not args.dry_run and not outreach.smtp_configured():
+        print(f"error: {outreach.SMTP_SETUP_STEP}", file=sys.stderr)
+        return 1
+    conn = db.connect(_db_path(args))
+    results: list[dict[str, Any]] = []
+    try:
+        contacts = db.list_outreach_contacts(conn, product_name=args.product, status=args.status)
+        if args.channel:
+            contacts = [c for c in contacts if c["channel"] == args.channel]
+        attempted = 0
+        for contact in contacts:
+            base = {"id": contact["id"], "name": contact["name"], "channel": contact["channel"]}
+            if args.limit is not None and attempted >= args.limit:
+                results.append({**base, "outcome": "queued",
+                                "detail": "over --limit for this run -- re-run to continue"})
+                continue
+            if contact["send_status"] == "sent" and not args.resend:
+                results.append({**base, "outcome": "skipped", "detail": "already sent (use --resend)"})
+                continue
+            to_email = outreach.resolve_recipient_email(contact)
+            if not to_email:
+                results.append({**base, "outcome": "skipped", "detail": "no email on file"})
+                continue
+            body = outreach.draft_message(contact["channel"], profile, contact_name=contact["name"])
+            subject = (args.subject or f"Quick note from {profile.name}").strip()
+            if len(subject) > content.COLD_EMAIL_SUBJECT_MAX:
+                subject = subject[: content.COLD_EMAIL_SUBJECT_MAX - 1].rstrip() + "…"
+            if args.dry_run:
+                results.append({**base, "outcome": "dry_run", "to": to_email, "subject": subject, "body": body})
+                attempted += 1
+                continue
+            if attempted > 0 and args.delay > 0:
+                time.sleep(args.delay)
+            try:
+                outreach.send_email(to_email=to_email, subject=subject, body=body)
+            except outreach.OutreachSendError as exc:
+                db.mark_outreach_sent(conn, contact["id"], status="failed", error=exc.message)
+                results.append({**base, "outcome": "failed", "to": to_email, "detail": exc.message})
+                attempted += 1
+                continue
+            db.mark_outreach_sent(conn, contact["id"], status="sent")
+            if contact["status"] == "not_contacted":
+                db.update_outreach_status(conn, contact["id"], "contacted",
+                                          note="auto: marked contacted after a successful outreach send.")
+            results.append({**base, "outcome": "sent", "to": to_email})
+            attempted += 1
+    finally:
+        conn.close()
+    if args.json:
+        _print({"results": results}, as_json=True)
+        return 0
+    counts: dict[str, int] = {}
+    for r in results:
+        counts[r["outcome"]] = counts.get(r["outcome"], 0) + 1
+    summary = ", ".join(f"{v} {k}" for k, v in counts.items()) if counts else "nothing matched"
+    print(f"Batch outreach for {args.product!r}: {summary}.\n")
+    for r in results:
+        line = f"- {r['name']} ({r['channel']}): {r['outcome']}"
+        if r.get("to"):
+            line += f" -> {r['to']}"
+        if r.get("detail"):
+            line += f" ({r['detail']})"
+        print(line)
     return 0
 
 
@@ -1102,6 +1238,42 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common(p_o_send)
     p_o_send.set_defaults(func=_cmd_outreach_send)
 
+    p_o_import = outreach_sub.add_parser("import", help="Bulk-add contacts from a CSV -- the "
+                                                         "mail-merge import side of 'outreach "
+                                                         "list --csv' export.")
+    p_o_import.add_argument("product")
+    p_o_import.add_argument("csv_file", help="CSV with (at minimum) 'name' and 'channel' "
+                            "columns; optional 'handle'/'email'/'status'/'note'. Column names "
+                            "are matched case-insensitively.")
+    _add_common(p_o_import)
+    p_o_import.set_defaults(func=_cmd_outreach_import)
+
+    p_o_batch = outreach_sub.add_parser("send-batch", help="Mail-merge: actually send the "
+                                                           "channel-appropriate drafted message "
+                                                           "to every matching tracked contact "
+                                                           "with an email on file, via your own "
+                                                           "SMTP credentials.")
+    p_o_batch.add_argument("product")
+    p_o_batch.add_argument("--status", default="not_contacted", choices=db.OUTREACH_STATUSES,
+                           help="Only send to contacts in this pipeline status (default: not_contacted).")
+    p_o_batch.add_argument("--channel", default=None, choices=db.OUTREACH_CHANNELS,
+                           help="Only send to this channel's contacts; default: every channel.")
+    p_o_batch.add_argument("--limit", type=int, default=None, help="Send at most this many "
+                           "messages this run; re-run the same command to continue where it left off.")
+    p_o_batch.add_argument("--delay", type=float, default=3.0, help="Seconds to sleep between "
+                           "sends, so a batch doesn't trip a mail provider's rate limiter or a "
+                           "recipient's spam filter (default: 3.0).")
+    p_o_batch.add_argument("--resend", action="store_true", help="Also (re-)send to contacts "
+                           "already marked send_status=sent; default is to skip them.")
+    p_o_batch.add_argument("--dry-run", action="store_true", dest="dry_run", help="Draft and "
+                           "report who/what would be sent without opening an SMTP connection or "
+                           "writing anything.")
+    p_o_batch.add_argument("--subject", default=None, help="Email subject line for every message "
+                           "in this batch; defaults to 'Quick note from <product name>'.")
+    _add_profile_flags(p_o_batch)
+    _add_common(p_o_batch)
+    p_o_batch.set_defaults(func=_cmd_outreach_send_batch)
+
     p_utm = sub.add_parser("utm", help="Local UTM link builder + history (no analytics server involved).")
     utm_sub = p_utm.add_subparsers(dest="utm_command", required=True)
 
@@ -1124,9 +1296,10 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common(p_u_list)
     p_u_list.set_defaults(func=_cmd_utm_list)
 
-    p_watch = sub.add_parser("watch", help="Always-on background poll: notifies (native macOS "
-                                          "notification, or stdout elsewhere) when a directory "
-                                          "link dies or an outreach contact goes stale.")
+    p_watch = sub.add_parser("watch", help="Always-on background poll: notifies (native macOS/"
+                                          "Linux/Windows notification, or stdout where none is "
+                                          "available) when a directory link dies or an outreach "
+                                          "contact goes stale.")
     p_watch.add_argument("product")
     p_watch.add_argument("--interval", type=int, default=watch.DEFAULT_INTERVAL_S,
                          help=f"Seconds between polls (default: {watch.DEFAULT_INTERVAL_S}).")
