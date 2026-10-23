@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -61,9 +62,23 @@ def load(path: Path | None = None) -> dict[str, Any]:
 
 
 def save(state: dict[str, Any], path: Path | None = None) -> Path:
+    """Write ``state`` to ``path`` atomically: serialize to a temp file in the same
+    directory, flush+fsync it, then ``os.replace()`` it into place. A process killed
+    mid-write leaves either the old file or the new one intact -- never a truncated or
+    half-written ``state.json``."""
     target = path or default_path()
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+    payload = json.dumps(state, indent=2, sort_keys=True)
+    fd, tmp_name = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_name, target)
+    except BaseException:
+        Path(tmp_name).unlink(missing_ok=True)
+        raise
     return target
 
 

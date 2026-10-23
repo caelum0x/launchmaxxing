@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.6 -- 2026-10-23
+
+### Fixed
+
+- **`state.save()` writes atomically.** Previously `state.json` was written with a
+  single direct `write_text()` call; a process killed mid-write (crash, `kill -9`,
+  power loss) could leave a truncated or corrupted file with no recovery path, since
+  `load()`'s `json.JSONDecodeError` handler would then silently reset to empty state
+  on the next run, discarding all saved progress. `save()` now writes to a temp file
+  in the same directory (`tempfile.mkstemp`), `fsync`s it, then `os.replace()`s it
+  into place -- a process killed at any point leaves either the complete old file or
+  the complete new one, never a partial write; on an unexpected error the temp file
+  is removed and the original `state.json` is left untouched. 2 new tests
+  (`tests/test_state.py`); 214/214 passing.
+
 ## 0.2.5 -- 2026-10-23
 
 ### Added

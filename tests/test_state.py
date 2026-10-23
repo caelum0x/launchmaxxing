@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -31,6 +32,30 @@ def test_set_platform_status_rejects_unknown_platform() -> None:
     app_state = state.load(Path("/nonexistent"))
     with pytest.raises(ValueError):
         state.set_platform_status(app_state, product_name="Acme", platform_id="not_real", status="submitted")
+
+
+def test_save_is_atomic_and_leaves_no_temp_file(tmp_path: Path) -> None:
+    path = tmp_path / "state.json"
+    state.save({"products": {}, "pain_point_drafts": []}, path)
+    leftovers = [p for p in tmp_path.iterdir() if p != path]
+    assert leftovers == []
+    assert path.read_text(encoding="utf-8").strip().startswith("{")
+
+
+def test_save_preserves_old_file_if_write_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = tmp_path / "state.json"
+    state.save({"products": {"Acme": {"platforms": {}, "steps": {}}}, "pain_point_drafts": []}, path)
+    original = path.read_text(encoding="utf-8")
+
+    def _boom(*_args: object, **_kwargs: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(os, "fsync", _boom)
+    with pytest.raises(OSError):
+        state.save({"products": {}, "pain_point_drafts": []}, path)
+
+    assert path.read_text(encoding="utf-8") == original
+    assert list(tmp_path.iterdir()) == [path]
 
 
 def test_set_platform_status_rejects_bad_status() -> None:
