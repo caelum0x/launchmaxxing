@@ -51,7 +51,7 @@ def test_directories_text(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     out = capsys.readouterr().out
     assert code == 0
     assert "Product Hunt" in out
-    assert "24 launch director" in out
+    assert "82 launch director" in out
 
 
 def test_directories_json_and_category_filter(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -242,12 +242,13 @@ def test_pain_points_saves_drafts_and_prints(tmp_path: Path, capsys: pytest.Capt
         return [thread]
 
     monkeypatch.setattr(reddit_search, "search", fake_search)
-    code = cli.main(["pain-points", "onboarding", "--product", "Acme", "--state-file", str(tmp_path / "s.json")])
+    code = cli.main(["pain-points", "onboarding", "--product", "Acme", "--source", "reddit",
+                     "--state-file", str(tmp_path / "s.json")])
     out = capsys.readouterr().out
     assert code == 0
     assert "Onboarding is painful" in out
     assert "Acme" in out
-    assert "nothing here posts to Reddit" in out
+    assert "nothing here posts anywhere" in out
 
     capsys.readouterr()
     code2 = cli.main(["drafts", "--json", "--state-file", str(tmp_path / "s.json")])
@@ -263,9 +264,12 @@ def test_pain_points_search_error_reported(tmp_path: Path, capsys: pytest.Captur
         raise reddit_search.RedditSearchError("rate limited", 429)
 
     monkeypatch.setattr(reddit_search, "search", fake_search)
-    code = cli.main(["pain-points", "q", "--state-file", str(tmp_path / "s.json")])
-    assert code == 1
-    assert "rate limited" in capsys.readouterr().err
+    # One source failing (Reddit here, isolated via --source) no longer fails the whole command --
+    # other sources might still have results, so the command reports the per-source failure
+    # reason instead of exiting non-zero (see launchmaxxing.painpoints.search_all).
+    code = cli.main(["pain-points", "q", "--source", "reddit", "--state-file", str(tmp_path / "s.json")])
+    assert code == 0
+    assert "rate limited" in capsys.readouterr().out
 
 
 def test_draft_status_approve_round_trip(tmp_path: Path, capsys: pytest.CaptureFixture[str],
@@ -274,7 +278,7 @@ def test_draft_status_approve_round_trip(tmp_path: Path, capsys: pytest.CaptureF
                                         subreddit="SaaS", upvotes=1, age_days=0)
     monkeypatch.setattr(reddit_search, "search", lambda *a, **k: [thread])
     state_file = str(tmp_path / "s.json")
-    cli.main(["pain-points", "q", "--state-file", state_file, "--json"])
+    cli.main(["pain-points", "q", "--source", "reddit", "--state-file", state_file, "--json"])
     draft_id = json.loads(capsys.readouterr().out)["threads"][0].get("id")
     if not draft_id:
         cli.main(["drafts", "--json", "--state-file", state_file])
@@ -305,7 +309,7 @@ def test_init_json_contains_platforms_and_checklist(tmp_path: Path, capsys: pyte
     data = json.loads(capsys.readouterr().out)
     assert code == 0
     assert data["product_name"] == "Acme"
-    assert len(data["platforms"]) == 24
+    assert len(data["platforms"]) == 82
     assert data["checklist"]["total"] == 10
 
 
@@ -438,7 +442,7 @@ def test_content_save_all_platforms_persists_every_draft(tmp_path: Path,
         drafts = db.list_content_drafts(conn, product_name="Acme")
     finally:
         conn.close()
-    assert len(drafts) == 5
+    assert len(drafts) == len(db.CONTENT_PLATFORMS)
 
 
 def test_content_profile_file_not_a_json_object_errors(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -56,7 +56,7 @@ def build(app_state: dict[str, Any], conn: sqlite3.Connection, product_name: str
         else:
             submitted_or_live += 1
 
-    checklist_result = checklist.build(app_state, title)
+    checklist_result = checklist.build(app_state, title, conn=conn)
 
     outreach_contacts = db.list_outreach_contacts(conn, product_name=title)
     outreach_by_status: dict[str, int] = {}

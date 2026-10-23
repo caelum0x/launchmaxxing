@@ -144,6 +144,25 @@ def get_step_statuses(state: dict[str, Any], product_name: str) -> dict[str, dic
     return dict(state.get("products", {}).get(title, {}).get("steps", {}))
 
 
+def set_default_profile(state: dict[str, Any], product_name: str, profile: dict[str, Any]) -> dict[str, Any]:
+    """Save ``profile`` (name/tagline/problem/audience/differentiator/url/pricing/subreddit) as
+    this product's default -- set once via ``launchmaxxing init --interactive``, read back by
+    every later ``content``/``outreach draft`` call for the same product so a founder doesn't
+    have to re-supply every flag each time they want another platform's copy."""
+    bucket = _product_bucket(state, product_name)
+    bucket["profile"] = dict(profile)
+    return bucket["profile"]
+
+
+def get_default_profile(state: dict[str, Any], product_name: str) -> dict[str, Any] | None:
+    """This product's saved default profile, or ``None`` if ``init --interactive`` (or a direct
+    ``set_default_profile`` call) was never run for it."""
+    title = product_name.strip()
+    bucket = state.get("products", {}).get(title)
+    saved = bucket.get("profile") if bucket else None
+    return dict(saved) if saved else None
+
+
 def add_pain_point_drafts(state: dict[str, Any], *, query: str, product_name: str,
                           threads: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Append one draft per new thread (deduped by thread_url + query); returns every draft for
@@ -153,9 +172,11 @@ def add_pain_point_drafts(state: dict[str, Any], *, query: str, product_name: st
     out: list[dict[str, Any]] = []
     for thread in threads:
         if thread["thread_url"] not in existing_urls:
+            community = thread.get("community", thread.get("subreddit", ""))
             row = {
                 "id": uuid.uuid4().hex, "product_name": product_name.strip(), "query": query,
-                "subreddit": thread.get("subreddit", ""), "thread_url": thread["thread_url"],
+                "source": thread.get("source", "reddit"), "subreddit": community, "community": community,
+                "thread_url": thread["thread_url"],
                 "thread_title": thread.get("thread_title", ""), "snippet": thread.get("snippet", ""),
                 "upvotes": thread.get("upvotes", 0), "age_days": thread.get("age_days", 0),
                 "draft_reply": thread.get("draft_reply", ""), "status": "drafted", "created_at": _now_iso(),
@@ -191,6 +212,7 @@ def set_draft_status(state: dict[str, Any], draft_id: str, status: str) -> dict[
 
 __all__ = [
     "DRAFT_STATUSES", "PLATFORM_STATUSES", "STEP_STATUSES", "add_pain_point_drafts", "default_path",
-    "get_platform_statuses", "get_product_created_at", "get_step_statuses", "list_pain_point_drafts", "load",
-    "save", "set_draft_status", "set_platform_status", "set_step_status",
+    "get_default_profile", "get_platform_statuses", "get_product_created_at", "get_step_statuses",
+    "list_pain_point_drafts", "load", "save", "set_default_profile", "set_draft_status",
+    "set_platform_status", "set_step_status",
 ]

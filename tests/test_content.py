@@ -162,7 +162,10 @@ def test_linkedin_post_without_url() -> None:
 
 def test_generate_all_returns_every_platform() -> None:
     result = content.generate_all(_profile())
-    assert set(result) == {"product_hunt", "show_hn", "twitter", "reddit", "linkedin"}
+    assert set(result) == {
+        "product_hunt", "show_hn", "ask_hn", "twitter", "reddit", "linkedin", "indie_hackers",
+        "cold_pitch_email", "community_intro", "newsletter_sponsor_pitch",
+    }
     assert result["product_hunt"]["tagline"]["length"] <= content.PRODUCT_HUNT_TAGLINE_MAX
 
 

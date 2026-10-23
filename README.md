@@ -18,16 +18,25 @@ after to track it.
 
 ## What's in it
 
-- **24 real launch directories**, kept current for 2026 -- Product Hunt,
+- **82 real launch directories**, kept current for 2026 -- Product Hunt,
   BetaList, DevHunt, Peerlist, Hacker News (Show HN), Indie Hackers,
   Launching Next, SaaSHub, AlternativeTo, Futurepedia, There's An AI For
   That, G2, Capterra, Fazier, Uneed, TinyLaunch, r/SideProject, GitHub's
-  awesome-lists, plus six newer 2026 directories added after a fresh
-  competitive-landscape pass: **PeerPush** (explicitly GEO-optimized for
-  AI-assistant discovery -- ChatGPT, Perplexity, Claude/MCP, not just human
-  visitors), **Turbo0**, **Smol Launch**, **StartupBase**, **Microlaunch**
-  and **Findly Tools** -- each with its real submission URL (verified live,
-  not just the homepage) and a one-line note on how to use it well. Each
+  awesome-lists, PeerPush (explicitly GEO-optimized for AI-assistant
+  discovery -- ChatGPT, Perplexity, Claude/MCP, not just human visitors),
+  Turbo0, Smol Launch, StartupBase, Microlaunch, Findly Tools, plus a
+  2026-10-23 breadth pass that added 58 more across six new category
+  families: AI-tool/GEO directories (AITools.fyi, Dang.ai, Future Tools,
+  Aixploria, Toolify.ai, ...), browser-extension stores (Chrome Web Store,
+  Edge, Firefox, Opera), API marketplaces (RapidAPI, Postman API Network,
+  APIs.guru, the public-apis GitHub list), newsletter sponsor slots
+  (Paved, Swapstack, Sidebar.io, beehiiv Ad Network), Slack/Discord
+  community lists (Disboard, Discord.me, Discadia, Slofile), and
+  vertical-SaaS/integration-ecosystem directories (Zapier, Make, Slack App
+  Directory, Shopify App Store, WordPress Plugin Directory, Salesforce
+  AppExchange, GetApp, TrustRadius, AppSumo Partners, and more) -- each
+  with its real submission URL (verified live, not just the homepage) and
+  a one-line note on how to use it well. Each
   directory is also tagged with a real `account_free` flag, so
   `directories --account-free` (combinable with `--category`) lists only
   the ones you can submit to without creating an account anywhere in the flow.
@@ -67,8 +76,8 @@ after to track it.
   contacts for Gmail mail-merge or a spreadsheet.
 - **Local UTM link builder (`utm`)** -- this tool has no server to receive
   clicks, so instead of faking analytics it builds correctly tagged links
-  (with sensible per-directory source/medium defaults for all 24 catalog
-  entries) and saves them locally, so you know which exact link you used
+  (with sensible per-directory source/medium defaults for most catalog
+  entries, falling back to deriving one from the platform id for the rest) and saves them locally, so you know which exact link you used
   where. Paste the result into whatever analytics you already run;
   `utm list --csv links.csv` exports the saved links to a CSV file.
 - **Shareable one-page launch report (`report`)** -- a Markdown summary of
@@ -116,7 +125,7 @@ database uses Python's built-in `sqlite3`, no extra dependency.
 launchmaxxing init "My Product"
 ```
 
-This prints your full launch plan: all 24 directories to submit to, plus
+This prints your full launch plan: all 82 directories to submit to, plus
 the 10-step playbook with progress tracked locally, and the commands to
 keep working the launch afterward.
 

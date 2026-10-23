@@ -4,7 +4,7 @@ from launchmaxxing import catalog
 
 
 def test_platform_count_and_shape() -> None:
-    assert len(catalog.PLATFORMS) == 24
+    assert len(catalog.PLATFORMS) == 82
     for p in catalog.PLATFORMS:
         assert p["id"] and p["name"] and p["url"].startswith("https://")
         assert isinstance(p["categories"], tuple) and p["categories"]

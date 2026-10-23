@@ -27,7 +27,21 @@ from typing import Any
 
 OUTREACH_CHANNELS = ("creator", "press", "community", "user")
 OUTREACH_STATUSES = ("not_contacted", "contacted", "replied", "booked", "declined")
-CONTENT_PLATFORMS = ("product_hunt", "show_hn", "twitter", "reddit", "linkedin")
+#: ``send_status`` on an outreach contact, separate from its outreach pipeline ``status`` above:
+#: this tracks whether launchmaxxing itself successfully sent an email for this contact (via the
+#: user's own SMTP credentials, see :mod:`launchmaxxing.outreach`), not where the relationship
+#: stands. "" means never attempted.
+OUTREACH_SEND_STATUSES = ("sent", "failed")
+#: Columns added after the original schema shipped; :func:`connect` adds any that are missing
+#: from an already-existing database file on disk (``ALTER TABLE ... ADD COLUMN``, SQLite
+#: supports this directly) so upgrading launchmaxxing never requires deleting/migrating the local
+#: database by hand.
+_OUTREACH_CONTACTS_MIGRATIONS: tuple[tuple[str, str], ...] = (
+    ("email", "TEXT NOT NULL DEFAULT ''"), ("sent_at", "TEXT NOT NULL DEFAULT ''"),
+    ("send_status", "TEXT NOT NULL DEFAULT ''"), ("send_error", "TEXT NOT NULL DEFAULT ''"),
+)
+CONTENT_PLATFORMS = ("product_hunt", "show_hn", "twitter", "reddit", "linkedin", "ask_hn",
+                     "indie_hackers", "cold_pitch_email", "community_intro", "newsletter_sponsor_pitch")
 
 DEFAULT_DB_PATH = Path.home() / ".launchmaxxing" / "launchmaxxing.db"
 
@@ -52,7 +66,11 @@ CREATE TABLE IF NOT EXISTS outreach_contacts (
     status TEXT NOT NULL,
     note TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    email TEXT NOT NULL DEFAULT '',
+    sent_at TEXT NOT NULL DEFAULT '',
+    send_status TEXT NOT NULL DEFAULT '',
+    send_error TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_outreach_contacts_product
     ON outreach_contacts (product_name, status);
@@ -103,6 +121,10 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
     conn = sqlite3.connect(target)
     conn.row_factory = sqlite3.Row
     conn.executescript(_SCHEMA)
+    existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(outreach_contacts)")}
+    for column, ddl in _OUTREACH_CONTACTS_MIGRATIONS:
+        if column not in existing_columns:
+            conn.execute(f"ALTER TABLE outreach_contacts ADD COLUMN {column} {ddl}")
     conn.commit()
     return conn
 
@@ -140,7 +162,8 @@ def list_submission_events(conn: sqlite3.Connection, product_name: str,
 # outreach contacts
 # --------------------------------------------------------------------------- #
 def add_outreach_contact(conn: sqlite3.Connection, *, product_name: str, name: str, channel: str,
-                          handle: str = "", status: str = "not_contacted", note: str = "") -> dict[str, Any]:
+                          handle: str = "", status: str = "not_contacted", note: str = "",
+                          email: str = "") -> dict[str, Any]:
     if channel not in OUTREACH_CHANNELS:
         raise ValueError(f"channel must be one of {', '.join(OUTREACH_CHANNELS)}")
     if status not in OUTREACH_STATUSES:
@@ -151,14 +174,40 @@ def add_outreach_contact(conn: sqlite3.Connection, *, product_name: str, name: s
     moment = _now_iso()
     row = {"id": uuid.uuid4().hex, "product_name": product_name.strip(), "name": clean_name, "channel": channel,
            "handle": handle.strip(), "status": status, "note": note.strip(), "created_at": moment,
-           "updated_at": moment}
+           "updated_at": moment, "email": email.strip(), "sent_at": "", "send_status": "", "send_error": ""}
     conn.execute(
         "INSERT INTO outreach_contacts (id, product_name, name, channel, handle, status, note, created_at, "
-        "updated_at) VALUES (:id, :product_name, :name, :channel, :handle, :status, :note, :created_at, "
-        ":updated_at)", row,
+        "updated_at, email, sent_at, send_status, send_error) VALUES (:id, :product_name, :name, :channel, "
+        ":handle, :status, :note, :created_at, :updated_at, :email, :sent_at, :send_status, :send_error)", row,
     )
     conn.commit()
     return row
+
+
+def get_outreach_contact(conn: sqlite3.Connection, contact_id: str) -> dict[str, Any] | None:
+    row = conn.execute("SELECT * FROM outreach_contacts WHERE id = ?", (contact_id,)).fetchone()
+    return dict(row) if row is not None else None
+
+
+def mark_outreach_sent(conn: sqlite3.Connection, contact_id: str, *, status: str,
+                       error: str = "") -> dict[str, Any]:
+    """Record the outcome of :func:`launchmaxxing.outreach.send_email` against one tracked
+    contact: ``send_status`` (``sent``/``failed``) plus ``sent_at``/``send_error``. Separate from
+    :func:`update_outreach_status`, which tracks where the *relationship* stands (contacted,
+    replied, ...) -- a send can fail (bad SMTP creds) without that meaning the contact was never
+    reached through some other channel, so the two are not conflated into one status field."""
+    if status not in OUTREACH_SEND_STATUSES:
+        raise ValueError(f"status must be one of {', '.join(OUTREACH_SEND_STATUSES)}")
+    existing = get_outreach_contact(conn, contact_id)
+    if existing is None:
+        raise ValueError(f"contact not found: {contact_id!r}")
+    moment = _now_iso()
+    conn.execute(
+        "UPDATE outreach_contacts SET send_status = ?, send_error = ?, sent_at = ?, updated_at = ? WHERE id = ?",
+        (status, error.strip(), moment, moment, contact_id),
+    )
+    conn.commit()
+    return get_outreach_contact(conn, contact_id)  # type: ignore[return-value]
 
 
 def update_outreach_status(conn: sqlite3.Connection, contact_id: str, status: str,
@@ -259,8 +308,9 @@ def list_utm_links(conn: sqlite3.Connection, product_name: str | None = None) ->
 
 
 __all__ = [
-    "CONTENT_PLATFORMS", "DEFAULT_DB_PATH", "OUTREACH_CHANNELS", "OUTREACH_STATUSES", "add_content_draft",
-    "add_outreach_contact", "add_utm_link", "connect", "default_path", "list_content_drafts",
-    "list_outreach_contacts", "list_submission_events", "list_utm_links", "log_submission_event",
+    "CONTENT_PLATFORMS", "DEFAULT_DB_PATH", "OUTREACH_CHANNELS", "OUTREACH_SEND_STATUSES",
+    "OUTREACH_STATUSES", "add_content_draft", "add_outreach_contact", "add_utm_link", "connect",
+    "default_path", "get_outreach_contact", "list_content_drafts", "list_outreach_contacts",
+    "list_submission_events", "list_utm_links", "log_submission_event", "mark_outreach_sent",
     "stale_outreach_contacts", "update_outreach_status",
 ]

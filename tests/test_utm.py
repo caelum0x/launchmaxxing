@@ -19,11 +19,17 @@ def test_defaults_for_unknown_platform_falls_back() -> None:
     assert defaults["medium"] == "referral"
 
 
-def test_defaults_for_every_catalog_platform_id_present() -> None:
+def test_defaults_resolve_for_every_catalog_platform_id() -> None:
+    """Every catalog platform gets a usable (non-empty source/medium) UTM default -- either from
+    the curated :data:`utm.PLATFORM_UTM_DEFAULTS` table (only practical to hand-curate for a
+    subset of the catalog) or :func:`utm.defaults_for_platform`'s id-derived fallback for
+    everything else, so growing the catalog never leaves a platform with no usable default."""
     from launchmaxxing import catalog
 
     for platform in catalog.PLATFORMS:
-        assert platform["id"] in utm.PLATFORM_UTM_DEFAULTS
+        defaults = utm.defaults_for_platform(platform["id"])
+        assert defaults["source"]
+        assert defaults["medium"]
 
 
 def test_build_url_adds_utm_params() -> None:

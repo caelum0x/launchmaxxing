@@ -14,7 +14,9 @@ from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 #: Sensible utm_source/utm_medium defaults per directory, so a founder does not have to invent
-#: naming conventions by hand for all 24 catalog entries -- only override when it matters.
+#: naming conventions by hand for every catalog entry -- only override when it matters. Platforms
+#: without an explicit entry here still work: :func:`defaults_for_platform` falls back to deriving
+#: source/medium from the platform_id itself.
 PLATFORM_UTM_DEFAULTS: dict[str, dict[str, str]] = {
     "product_hunt": {"source": "producthunt", "medium": "launch_directory"},
     "betalist": {"source": "betalist", "medium": "launch_directory"},

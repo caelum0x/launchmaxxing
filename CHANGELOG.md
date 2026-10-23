@@ -1,5 +1,81 @@
 # Changelog
 
+## 0.3.0 -- 2026-10-23
+
+### Added
+
+- **Catalog expanded from 24 to 82 directories.** Added 58 new entries across six category
+  families identified as the single biggest competitive gap vs. SubmitMap (366), OpenLaunch
+  (239) and SubmitFleet (339) in `STRATEGY-2026-10-23.md`: AI-tool/GEO directories (AITools.fyi,
+  Dang.ai, Future Tools, Aixploria, Toolify.ai, Tools Navigator, AI Tool Mall, Insidr.ai),
+  browser-extension stores (Chrome Web Store, Edge, Firefox, Opera), API marketplaces (RapidAPI,
+  Postman API Network, APIs.guru, the public-apis GitHub list), newsletter sponsor slots (Paved,
+  Swapstack, Sidebar.io, beehiiv Ad Network), Slack/Discord community lists (Disboard,
+  Discord.me, Discadia, Slofile), and vertical-SaaS/integration-ecosystem directories (Zapier,
+  Make, Slack App Directory, Zoom, Shopify, WooCommerce, WordPress, Notion, Atlassian, Google
+  Workspace, Salesforce AppExchange, HubSpot, GetApp, Software Advice, TrustRadius, SourceForge,
+  Crozdesk, GoodFirms, FeaturedCustomers, Slant, AppSumo Partners, Crunchbase, BetaPage,
+  NoCodeList, NoCodeFinder, YC Launches, StackShare, Console.dev, plus four more Reddit
+  communities). Every URL live-verified by direct HTTP fetch on 2026-10-23.
+- **`dashboard`/`serve` -- a shareable static HTML visual artifact.** New `dashboard.py` module
+  renders the full `track` payload as one self-contained HTML file with inline CSS/SVG progress
+  rings and a submission timeline (no CDN asset, no network request). `launchmaxxing dashboard`
+  writes it to disk; `launchmaxxing serve` runs a localhost-only `http.server` that re-renders on
+  every request for a live view. `report --html` reuses the same template; `report --json` emits
+  the raw dashboard payload.
+- **`dogfood` -- launchmaxxing submits itself.** New `dogfood.py` module runs the tool's own
+  `content` generator against launchmaxxing's real product profile for every catalog directory
+  it has added but not yet self-submitted to (PeerPush, Turbo0, Smol Launch, StartupBase,
+  Microlaunch, Findly Tools), writing ready-to-paste copy to `launch-evidence/`. Never
+  auto-submits anywhere; `--mark-submitted` only records the tracker status after a human
+  confirms they did the real paste-and-click submission.
+- **`init --interactive` -- a step-by-step onboarding wizard.** Prompts for
+  tagline/problem/audience/differentiator/url/pricing/subreddit and saves the answers as the
+  product's default profile (`state.set_default_profile`/`get_default_profile`); `content` and
+  `outreach draft` now read that default automatically, so neither needs every flag re-supplied
+  on every call once a product has been initialized interactively.
+- **`outreach send` -- actually sends a drafted message.** New SMTP sending path in `outreach.py`
+  (`send_email`, reading `LAUNCHMAXXING_SMTP_*` env vars -- the user's own mail provider, zero
+  third-party account) moves outreach from draft-only to drafted-and-actually-sent-and-tracked.
+  `outreach_contacts` gained `email`/`sent_at`/`send_status`/`send_error` columns (migrated onto
+  existing databases automatically via `ALTER TABLE`); a successful send auto-advances a
+  `not_contacted` contact to `contacted`.
+- **`portfolio` -- cross-product rollup.** New `portfolio.py` module/command aggregates every
+  product with recorded activity (JSON state or SQLite) into one table: directory/checklist
+  completion %, outreach replies, and last-active/stale flag -- for a founder or studio running
+  several launches at once.
+- **`content` gained five more platform generators.** `indie_hackers`, `ask_hn`,
+  `cold_pitch_email`, `community_intro`, and `newsletter_sponsor_pitch`, each with its own
+  tone/length rules (mirroring the existing Show HN/Product Hunt generators), bringing
+  `CONTENT_PLATFORMS` from 5 to 10.
+- **Pain-point search merged across three sources.** New `painpoints.py` module adds Hacker News
+  (Algolia's free, keyless HN Search API) and a best-effort Indie Hackers source (honestly
+  reports itself as blocked -- confirmed Cloudflare-gated on every route tried -- rather than
+  faking coverage) alongside the existing Reddit search. `pain-points` gained `--source` to
+  restrict to one source; one source failing no longer fails the whole command.
+- **`watch` -- always-on background poll.** New `watch.py` module/command re-runs
+  `directories --check-links` and `track`'s stale-directory/stale-outreach detection on an
+  interval, firing a native macOS notification (`osascript`, no account/server) the moment
+  something *newly* breaks or goes stale -- degrades to a stdout log on non-macOS instead of
+  crashing.
+- **`backlinks --competitors file.txt`.** Multi-competitor mode (`fetch_many`) runs the lookup
+  across a list of named competitor domains in one pass and unions/dedupes the directories
+  they're findable through (cross-referenced against real backlink data when `--allow-live` is
+  set, or the category fallback otherwise) into one combined "submit here too" list, exportable
+  via `--export csv`.
+- **`report --html`/`--json`.** The one-page summary is no longer Markdown-only; `--html` reuses
+  the `dashboard` template, `--json` exposes the full `track` payload for piping into other tools.
+- **Checklist auto-derivation expanded.** `cold_outreach` now auto-derives once any outreach
+  contact moves past `not_contacted`; `reddit_pain_points` auto-derives once any pain-point draft
+  (any source) is approved or dismissed -- previously only `launch_everywhere` auto-derived.
+- **`compare` -- the competitor comparison table as data.** New `compare.py` module holds the
+  factual launchmaxxing-vs-SubmitMap/OpenLaunch/SubmitFleet/paid-services comparison already
+  researched in `STRATEGY-2026-10-23.md`, printable as text/JSON or a ready-to-paste README
+  Markdown table (`--markdown`/`--out`) -- regenerable, not hand-written prose that goes stale.
+- **`directories --export csv|json|opml`.** The full (optionally `--category`-filtered) catalog
+  can now be exported for a spreadsheet, script, or feed-reader/bookmark-tool import, instead of
+  only being consumable through the CLI's own commands.
+
 ## 0.2.6 -- 2026-10-23
 
 ### Fixed

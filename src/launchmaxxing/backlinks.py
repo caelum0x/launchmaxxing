@@ -26,7 +26,9 @@ So this module:
 
 from __future__ import annotations
 
+import csv
 import os
+from pathlib import Path
 from typing import Any
 
 from launchmaxxing import catalog
@@ -156,4 +158,104 @@ def fetch(domain: str, *, transport: Any = None, allow_live: bool = False,
     return _fallback(clean, env=env, category=category, account_free_only=account_free_only)
 
 
-__all__ = ["SETUP_STEP", "BacklinkError", "configured", "fetch"]
+def _registrable_domain(url: str) -> str:
+    """Best-effort registrable-domain extraction (strip scheme/``www.``/path/port, keep the last
+    two dot-separated labels) -- good enough to match e.g. ``https://www.producthunt.com/posts/new``
+    against a backlink row's ``producthunt.com``, which is this function's only real job. Not a
+    full public-suffix-list implementation (a catalog domain like ``theresanaiforthat.com`` under
+    a multi-label TLD would mismatch), so cross-referencing is intentionally advisory, not exact."""
+    cleaned = url.strip().lower().removeprefix("https://").removeprefix("http://")
+    cleaned = cleaned.split("/", 1)[0].split(":", 1)[0]
+    cleaned = cleaned.removeprefix("www.")
+    labels = cleaned.split(".")
+    return ".".join(labels[-2:]) if len(labels) >= 2 else cleaned
+
+
+def _catalog_domain_index() -> dict[str, dict[str, Any]]:
+    """Map each catalog platform's registrable domain to its full entry, for cross-referencing a
+    live backlink result's ``source_domain`` rows against directories this tool already knows
+    about -- the actual "is my competitor listed on one of our catalogued directories" check."""
+    index: dict[str, dict[str, Any]] = {}
+    for p in catalog.PLATFORMS:
+        index.setdefault(_registrable_domain(p["url"]), p)
+    return index
+
+
+def read_domains_file(path: Path | str) -> list[str]:
+    """One competitor domain per line from a plain text file; blank lines and ``#``-prefixed
+    comment lines are ignored, same convention as a requirements.txt-style list."""
+    lines = Path(path).expanduser().read_text(encoding="utf-8").splitlines()
+    return [line.strip() for line in lines if line.strip() and not line.strip().startswith("#")]
+
+
+def fetch_many(domains: list[str], *, transport: Any = None, allow_live: bool = False,
+               env: dict[str, str] | None = None, category: str | None = None,
+               account_free_only: bool = False) -> dict[str, Any]:
+    """Run :func:`fetch` across every domain in ``domains`` in one pass, then union/dedupe the
+    directories each competitor is findable through into one combined "submit here too" list --
+    the real pre-launch research workflow of checking several named competitors, not just one.
+
+    For a live result, a directory is included when the catalog's own submit-URL domain appears
+    among that competitor's real backlink source domains (grounded in actual link data, not a
+    guess). For a fallback result (no live key, or ``allow_live=False``), the category-filtered
+    fallback directories are included as-is, same as the single-domain :func:`fetch`. Every
+    directory in the combined list records which competitor domain(s) it was found through and
+    whether that came from a live backlink match or the fallback list."""
+    domain_index = _catalog_domain_index()
+    per_domain: list[dict[str, Any]] = []
+    combined: dict[str, dict[str, Any]] = {}
+    for domain in domains:
+        result = fetch(domain, transport=transport, allow_live=allow_live, env=env, category=category,
+                       account_free_only=account_free_only)
+        per_domain.append(result)
+        if result["live"]:
+            seen_here: set[str] = set()
+            for row in result["backlinks"]:
+                reg_domain = _registrable_domain(str(row.get("source_domain") or ""))
+                platform = domain_index.get(reg_domain)
+                if platform is None or platform["id"] in seen_here:
+                    continue
+                seen_here.add(platform["id"])
+                entry = combined.setdefault(platform["id"], {
+                    "id": platform["id"], "name": platform["name"], "url": platform["url"],
+                    "found_via": [], "source": "live_backlink",
+                })
+                entry["found_via"].append(domain)
+        else:
+            for p in result["fallback_directories"]:
+                entry = combined.setdefault(p["id"], {
+                    "id": p["id"], "name": p["name"], "url": p["url"], "found_via": [],
+                    "source": "fallback_category",
+                })
+                entry["found_via"].append(domain)
+    submit_here_too = sorted(combined.values(), key=lambda e: e["name"])
+    for entry in submit_here_too:
+        entry["found_via"] = ", ".join(entry["found_via"])
+    return {
+        "domains": domains, "per_domain": per_domain, "submit_here_too": submit_here_too,
+        "count": len(submit_here_too),
+    }
+
+
+#: Column order for CSV export, matching the ``submit_here_too`` row shape returned by
+#: :func:`fetch_many`.
+CSV_FIELDS = ("id", "name", "url", "found_via", "source")
+
+
+def export_csv(submit_here_too: list[dict[str, Any]], path: Path | str) -> Path:
+    """Write ``fetch_many``'s combined ``submit_here_too`` rows to a CSV file at ``path`` with a
+    header row -- a ready "submit here too" list a founder can work through after running
+    multi-competitor backlink research."""
+    out_path = Path(path)
+    with out_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        writer.writeheader()
+        for row in submit_here_too:
+            writer.writerow({key: row.get(key, "") for key in CSV_FIELDS})
+    return out_path
+
+
+__all__ = [
+    "CSV_FIELDS", "SETUP_STEP", "BacklinkError", "configured", "export_csv", "fetch", "fetch_many",
+    "read_domains_file",
+]
