@@ -736,13 +736,22 @@ def _cmd_utm_list(args: argparse.Namespace) -> int:
 # --------------------------------------------------------------------------- #
 def _cmd_watch(args: argparse.Namespace) -> int:
     state_path, db_path = _state_path(args), _db_path(args)
-    note = "" if watch.NOTIFY_SUPPORTED else " (no native notifications on this OS -- logging to stdout only)"
-    print(f"Watching {args.product!r} every {args.interval}s{note}. Ctrl-C to stop.")
+    notifier = watch.notify
+    channels = ["native OS popup" if watch.NOTIFY_SUPPORTED else "stdout only (no native "
+                "notifications on this OS)"]
+    if args.notify_email:
+        if not outreach.smtp_configured():
+            print(f"error: --notify-email needs SMTP credentials. {outreach.SMTP_SETUP_STEP}",
+                  file=sys.stderr)
+            return 1
+        notifier = watch.compose_notifiers(watch.notify, watch.make_email_notifier(args.notify_email))
+        channels.append(f"email to {args.notify_email}")
+    print(f"Watching {args.product!r} every {args.interval}s ({' + '.join(channels)}). Ctrl-C to stop.")
     try:
         watch.run_loop(
             lambda: state.load(state_path), lambda: db.connect(db_path), args.product,
             interval_s=args.interval, category=args.category, stale_days=args.stale_days,
-            max_cycles=args.cycles,
+            max_cycles=args.cycles, notifier=notifier,
         )
     except KeyboardInterrupt:
         print("\nStopped.")
@@ -1308,6 +1317,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_watch.add_argument("--stale-days", type=int, default=track.DEFAULT_STALE_DAYS)
     p_watch.add_argument("--cycles", type=int, default=None, help="Stop after this many poll "
                          "cycles instead of running forever (mainly for scripting/testing).")
+    p_watch.add_argument("--notify-email", default=None, metavar="EMAIL", dest="notify_email",
+                         help="Also (or on a headless/server box with no native notification "
+                              "mechanism, instead) email every alert to this address via your "
+                              "own SMTP credentials -- same setup as 'outreach send'.")
     _add_common(p_watch)
     p_watch.set_defaults(func=_cmd_watch)
 

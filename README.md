@@ -109,11 +109,15 @@ after to track it.
   notification the moment something newly breaks: macOS Notification
   Center, Linux `notify-send`, or a Windows balloon tip. Falls back to a
   stdout log line anywhere none of those is available; never crashes for
-  lacking one.
+  lacking one. `watch --notify-email you@example.com` also (or instead,
+  on a headless server with no native notification mechanism) emails
+  every alert to you via your own SMTP credentials.
 
-Nothing here auto-posts, auto-emails or auto-DMs anything, anywhere. Every
-write is local, and every "share this" action is a draft a human reviews
-and sends themselves.
+Nothing here auto-posts, auto-DMs, or emails anyone but *you* -- every
+outreach/press/community send is a draft a human reviews and sends
+themselves, and the one piece of mail this tool ever sends on its own
+(`watch --notify-email`) only ever goes to the address you configured it
+with, to tell you something broke, never to a contact or anywhere else.
 
 ## Install
 

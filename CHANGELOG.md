@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.3 -- 2026-10-23
+
+### Added
+
+- **`watch --notify-email`**. A real email-delivery channel for `watch`'s alerts, for a headless
+  server or any machine without a native OS notification mechanism (and for anyone who just
+  wants an email trail alongside a desktop popup) -- sends via the same SMTP credentials
+  `outreach send`/`send-batch` already use, only ever to the one address you configure it with
+  (never a contact, never automatically discovered). `watch.compose_notifiers` combines it with
+  the existing native notifier so both fire for the same event; fails fast with a clear setup
+  error before the poll loop ever starts if SMTP isn't configured.
+
+### Fixed
+
+- `watch`'s "no native notifications" log line still said "need macOS (osascript)" after 0.3.1
+  added real Linux/Windows support -- it now names the actual reason (missing `notify-send` on
+  Linux, or an unrecognized platform) and only fires when the caller is actually relying on the
+  native notifier (not when `--notify-email` is already covering alerting).
+
 ## 0.3.2 -- 2026-10-23
 
 ### Added

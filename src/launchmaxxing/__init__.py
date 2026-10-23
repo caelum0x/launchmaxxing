@@ -55,7 +55,9 @@ Seventeen pieces, each useful standalone:
 * :mod:`launchmaxxing.watch` -- an always-on background poll that re-runs
   the link-check/stale-reminder detection on an interval and fires a native
   notification (macOS Notification Center, Linux ``notify-send``, or a
-  Windows balloon tip) the moment something newly breaks or goes stale.
+  Windows balloon tip) the moment something newly breaks or goes stale, or
+  emails the alert to you (``--notify-email``) when there's no native
+  mechanism to pop a notification with, e.g. a headless server.
 * :mod:`launchmaxxing.portfolio` -- a cross-product rollup table for a
   founder or studio running several simultaneous launches.
 * :mod:`launchmaxxing.compare` -- the factual competitor comparison table
@@ -71,6 +73,6 @@ Seventeen pieces, each useful standalone:
 
 from __future__ import annotations
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 __all__ = ["__version__"]

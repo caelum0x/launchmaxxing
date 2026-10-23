@@ -28,7 +28,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 
-from launchmaxxing import linkcheck, track
+from launchmaxxing import linkcheck, outreach, track
 from launchmaxxing.transport import RequestsTransport
 
 #: How often ``watch`` polls by default -- 15 minutes. Frequent enough to catch a directory
@@ -113,6 +113,40 @@ def notify(title: str, message: str, *, runner: Callable[..., Any] | None = None
     return True
 
 
+def make_email_notifier(to_email: str, *, env: dict[str, str] | None = None) -> Callable[[str, str], bool]:
+    """Build a notifier callable (same ``(title, message) -> bool`` shape :func:`notify` has, so
+    it drops straight into :func:`diff_and_notify`/:func:`run_loop`'s ``notifier`` parameter)
+    that emails ``to_email`` via the user's own SMTP credentials instead of popping a native OS
+    notification -- the only delivery channel that actually reaches someone running ``watch`` on
+    a headless server or a Linux box with no notification daemon (where :data:`NOTIFY_SUPPORTED`
+    is ``False``), or who simply wants an email trail of every alert alongside/instead of a
+    desktop popup. Never raises: a failed send (SMTP not configured, network down, bad
+    credentials) is logged by the caller via the ``False`` return, not a crashed poll loop."""
+    def _send(title: str, message: str) -> bool:
+        try:
+            outreach.send_email(to_email=to_email, subject=title, body=message, env=env)
+            return True
+        except outreach.OutreachSendError:
+            return False
+    return _send
+
+
+def compose_notifiers(*notifiers: Callable[[str, str], bool]) -> Callable[[str, str], bool]:
+    """Combine several notifier callables (e.g. the native :func:`notify` plus an
+    :func:`make_email_notifier` email notifier) into the single callable
+    :func:`diff_and_notify`/:func:`run_loop` expect, so ``watch`` can fire every configured
+    channel for the same event without either of them knowing the other exists. Calls *every*
+    notifier (never short-circuits on the first success), returning ``True`` if any one of them
+    actually fired."""
+    def _combined(title: str, message: str) -> bool:
+        # Deliberately a list comprehension, not a generator -- any() short-circuits on the
+        # first True, which would skip every later notifier (e.g. never actually send the email
+        # once the native popup fires) if this were lazy.
+        results = [n(title, message) for n in notifiers]
+        return any(results)
+    return _combined
+
+
 def check_once(app_state: dict[str, Any], conn: Any, product_name: str, *, category: str | None = None,
                 stale_days: int = track.DEFAULT_STALE_DAYS, transport: Any = None) -> dict[str, Any]:
     """One poll cycle, as a pure function of the current state/db: link-check the catalog (or one
@@ -167,15 +201,26 @@ def diff_and_notify(previous: dict[str, Any] | None, current: dict[str, Any], *,
 def run_loop(app_state_loader: Callable[[], dict[str, Any]], conn_factory: Callable[[], Any], product_name: str,
             *, interval_s: int = DEFAULT_INTERVAL_S, category: str | None = None,
             stale_days: int = track.DEFAULT_STALE_DAYS, max_cycles: int | None = None,
+            notifier: Callable[[str, str], bool] = notify,
             sleep: Callable[[float], None] = time.sleep, log: Callable[[str], None] = print) -> int:
     """Poll forever (or exactly ``max_cycles`` times, for a bounded one-shot run) every
     ``interval_s`` seconds, notifying on anything newly detected. ``app_state_loader``/
     ``conn_factory`` are zero-argument callables re-invoked every cycle (not a snapshot captured
     once) so a directory/outreach change made by a separate ``launchmaxxing submit``/``outreach``
-    invocation while this loop is running is picked up on the very next poll. Returns the number
-    of cycles actually run."""
-    if not NOTIFY_SUPPORTED:
-        log("Native notifications need macOS (osascript) -- running anyway, logging to stdout instead.")
+    invocation while this loop is running is picked up on the very next poll. ``notifier``
+    defaults to the native-OS :func:`notify`; pass a :func:`make_email_notifier` (optionally
+    wrapped in :func:`compose_notifiers` alongside :func:`notify`) to also/instead email every
+    alert -- the practical channel on a headless box with no native notification mechanism.
+    Returns the number of cycles actually run."""
+    if not NOTIFY_SUPPORTED and notifier is notify:
+        reason = (
+            "install notify-send (most desktop Linux distros ship it via libnotify; a headless "
+            "server usually doesn't have a notification daemon to notify)"
+            if _PLATFORM == "Linux" else
+            f"no supported native-notification mechanism is known for {_PLATFORM!r}"
+        )
+        log(f"No native notifications available on this machine ({reason}) -- running anyway, "
+            "logging to stdout instead (pass an email notifier to still get alerted off-screen).")
     previous: dict[str, Any] | None = None
     cycles = 0
     while max_cycles is None or cycles < max_cycles:
@@ -185,7 +230,7 @@ def run_loop(app_state_loader: Callable[[], dict[str, Any]], conn_factory: Calla
             current = check_once(app_state, conn, product_name, category=category, stale_days=stale_days)
         finally:
             conn.close()
-        diff_and_notify(previous, current, product_name=product_name, log=log)
+        diff_and_notify(previous, current, product_name=product_name, notifier=notifier, log=log)
         previous = current
         cycles += 1
         if max_cycles is None or cycles < max_cycles:
@@ -194,5 +239,6 @@ def run_loop(app_state_loader: Callable[[], dict[str, Any]], conn_factory: Calla
 
 
 __all__ = [
-    "DEFAULT_INTERVAL_S", "NOTIFY_SUPPORTED", "check_once", "diff_and_notify", "notify", "run_loop",
+    "DEFAULT_INTERVAL_S", "NOTIFY_SUPPORTED", "check_once", "compose_notifiers", "diff_and_notify",
+    "make_email_notifier", "notify", "run_loop",
 ]
