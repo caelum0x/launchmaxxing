@@ -44,9 +44,10 @@ Seventeen pieces, each useful standalone:
   draft reply for each one. Nothing here posts, comments or votes; a human
   reviews and posts everything by hand.
 * :mod:`launchmaxxing.painpoints` -- the same read-only pain-point search,
-  merged across Reddit, Hacker News (Algolia's free HN Search API) and a
-  best-effort Indie Hackers source that honestly reports itself as blocked
-  rather than faking coverage.
+  merged across Reddit, Hacker News (Algolia's free HN Search API), Stack
+  Overflow (the free, keyless Stack Exchange API, searching question titles
+  *and* bodies) and a best-effort Indie Hackers source that honestly
+  reports itself as blocked rather than faking coverage.
 * :mod:`launchmaxxing.linkcheck` -- a live reachability check for every
   catalog submit URL, flagging dead links and redirects to a login page so
   catalog staleness is caught automatically instead of by manually
@@ -70,6 +71,6 @@ Seventeen pieces, each useful standalone:
 
 from __future__ import annotations
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 __all__ = ["__version__"]

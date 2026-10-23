@@ -1,8 +1,14 @@
 """Merged, read-only pain-point discovery across every free, keyless source this tool knows how
-to search -- not just Reddit. Extends :mod:`launchmaxxing.reddit_search` with two more sources:
+to search -- not just Reddit. Extends :mod:`launchmaxxing.reddit_search` with three more sources:
 
 * **Hacker News**, via the Algolia HN Search API (``hn.algolia.com/api/v1/search``) -- free,
   public, no API key, searches both story titles/text and comments.
+* **Stack Overflow**, via the public Stack Exchange API
+  (``api.stackexchange.com/2.3/search/advanced``) -- free, keyless (300 requests/day on the
+  shared anonymous quota, plenty for a founder's own searches), searches question titles *and*
+  bodies by relevance-ranked score. The single highest-signal source for painfully specific
+  "how do I do X" / "is there a tool for Y" developer pain points, which is exactly the audience
+  most launchmaxxing products target.
 * **Indie Hackers** -- best-effort. IndieHackers puts a Cloudflare JS challenge in front of
   every page and every API-shaped URL this module tries (confirmed 2026-10-23: the search page,
   a guessed ``/api/search`` route, the RSS/feed route and a guessed GraphQL route all return 403
@@ -28,14 +34,25 @@ from typing import Any
 from launchmaxxing import reddit_search as _reddit
 
 ALGOLIA_HN_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
+STACKEXCHANGE_SEARCH_URL = "https://api.stackexchange.com/2.3/search/advanced"
+#: A Stack Exchange "filter" selecting exactly the question fields this module reads, including
+#: ``body`` (not present in the API's default filter, so a snippet would otherwise always be
+#: empty). Stack Exchange filters are permanent, deterministic server-side objects keyed by their
+#: field list -- this one was generated once via a real ``POST .../filters/create`` with
+#: ``include=.items;.has_more;.quota_max;.quota_remaining;question.body;question.tags;
+#: question.score;question.creation_date;question.link;question.title;question.view_count;
+#: question.answer_count;question.is_answered`` and ``base=none``, and is safe to hardcode the
+#: same way :data:`ALGOLIA_HN_SEARCH_URL` hardcodes Algolia's endpoint.
+STACKEXCHANGE_FILTER = "!-o2skOs8qZ6UckFuT1MU"
 INDIEHACKERS_SEARCH_URL = "https://www.indiehackers.com/search"
 INDIEHACKERS_USER_AGENT = "launchmaxxing/1.0 (+https://github.com/caelum0x/launchmaxxing; read-only search)"
 HTTP_TIMEOUT_S = 15.0
 
 #: Every pain-point source this module knows about, in the order ``search_all`` runs them.
-SOURCES: tuple[str, ...] = ("reddit", "hacker_news", "indie_hackers")
+SOURCES: tuple[str, ...] = ("reddit", "hacker_news", "stack_overflow", "indie_hackers")
 SOURCE_LABELS: dict[str, str] = {
-    "reddit": "Reddit", "hacker_news": "Hacker News", "indie_hackers": "Indie Hackers",
+    "reddit": "Reddit", "hacker_news": "Hacker News", "stack_overflow": "Stack Overflow",
+    "indie_hackers": "Indie Hackers",
 }
 
 
@@ -65,10 +82,11 @@ class PainPointThread:
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
-def _clean_hn_text(text: Any) -> str:
-    """HN story/comment text comes back from Algolia as raw HTML (``<p>`` paragraph breaks,
-    ``&#x27;`` entities, etc.) since that's how HN itself stores it -- strip tags and unescape
-    entities so a generated draft reply reads as plain text instead of leaking markup."""
+def _clean_html_text(text: Any) -> str:
+    """HN story/comment text (from Algolia) and Stack Overflow question bodies both come back as
+    raw HTML (``<p>`` paragraph breaks, ``<code>`` blocks, ``&#x27;`` entities, etc.) since that's
+    how both sites store post content -- strip tags and unescape entities so a generated draft
+    reply reads as plain text instead of leaking markup."""
     unescaped = html.unescape(str(text or ""))
     stripped = _HTML_TAG_RE.sub(" ", unescaped)
     return " ".join(stripped.split())
@@ -115,14 +133,68 @@ def search_hacker_news(transport: Any, *, query: str, limit: int = 10,
         is_comment = "comment" in (hit.get("_tags") or [])
         url = str(hit.get("url") or "") or f"https://news.ycombinator.com/item?id={story_id}"
         hn_thread_url = f"https://news.ycombinator.com/item?id={story_id}"
-        title = _clean_hn_text(hit.get("title") or hit.get("story_title") or "(comment thread)")[:500]
+        title = _clean_html_text(hit.get("title") or hit.get("story_title") or "(comment thread)")[:500]
         snippet_source = hit.get("comment_text") if is_comment else (hit.get("story_text") or "")
-        snippet = _clean_hn_text(snippet_source)[:400]
+        snippet = _clean_html_text(snippet_source)[:400]
         out.append(PainPointThread(
             source="hacker_news", url=hn_thread_url, title=title, snippet=snippet,
             community="Hacker News", upvotes=int(hit.get("points") or 0),
             age_days=_age_days(hit.get("created_at_i"), now=moment),
             raw={"object_id": object_id, "external_url": url, "num_comments": hit.get("num_comments")},
+        ))
+    out.sort(key=lambda t: t.upvotes, reverse=True)
+    return out[: max(1, min(int(limit or 10), 50))]
+
+
+def search_stack_overflow(transport: Any, *, query: str, limit: int = 10,
+                           now: float | None = None) -> list[PainPointThread]:
+    """Search Stack Overflow question titles *and* bodies for ``query`` via the free, keyless
+    Stack Exchange API, sorted by score (net upvotes), highest first. Developers asking "how do I
+    do X" or "is there a library for Y" on Stack Overflow are some of the highest-signal pain
+    points available anywhere -- precisely specific, and the asker is already looking for exactly
+    what a dev-tool/SaaS product usually offers. No key required on the shared anonymous quota
+    (300 requests/day, ``quota_remaining`` is in every response if a caller wants to watch it)."""
+    q = str(query or "").strip()
+    if not q:
+        raise PainPointSearchError("query is required", 422)
+    moment = now if now is not None else time.time()
+    try:
+        resp = transport.request(
+            "GET", STACKEXCHANGE_SEARCH_URL,
+            params={"order": "desc", "sort": "votes", "q": q, "site": "stackoverflow",
+                    "pagesize": str(max(1, min(int(limit or 10), 50))), "filter": STACKEXCHANGE_FILTER},
+        )
+    except Exception as exc:
+        raise PainPointSearchError(f"Stack Overflow search is unreachable ({type(exc).__name__}).") from exc
+    status = getattr(resp, "status_code", 200)
+    if status >= 400:
+        raise PainPointSearchError(f"Stack Overflow search error {status}.", 502)
+    try:
+        body = resp.json() or {}
+    except ValueError:
+        body = {}
+    if body.get("error_id"):
+        # The Stack Exchange API reports its own errors (bad filter, quota exhausted, etc.) with
+        # HTTP 200 and an error_id/error_message in the body instead of a 4xx/5xx status.
+        raise PainPointSearchError(
+            f"Stack Overflow search error: {body.get('error_message') or body.get('error_name') or 'unknown error'}.",
+            502,
+        )
+    out: list[PainPointThread] = []
+    for item in body.get("items") or []:
+        question_id = item.get("question_id")
+        if not question_id:
+            continue
+        tags = [str(t) for t in (item.get("tags") or [])]
+        community = f"Stack Overflow ({tags[0]})" if tags else "Stack Overflow"
+        title = _clean_html_text(item.get("title") or "")[:500]
+        snippet = _clean_html_text(item.get("body") or "")[:400]
+        url = str(item.get("link") or f"https://stackoverflow.com/questions/{question_id}")
+        out.append(PainPointThread(
+            source="stack_overflow", url=url, title=title, snippet=snippet, community=community,
+            upvotes=int(item.get("score") or 0), age_days=_age_days(item.get("creation_date"), now=moment),
+            raw={"question_id": question_id, "tags": tags, "answer_count": item.get("answer_count"),
+                 "is_answered": bool(item.get("is_answered")), "view_count": item.get("view_count")},
         ))
     out.sort(key=lambda t: t.upvotes, reverse=True)
     return out[: max(1, min(int(limit or 10), 50))]
@@ -190,6 +262,14 @@ def search_all(transport: Any, *, query: str, subreddits: list[str] | None = Non
         except PainPointSearchError as exc:
             status["hacker_news"] = {"ok": False, "count": 0, "reason": exc.message}
 
+    if "stack_overflow" in sources:
+        try:
+            so_threads = search_stack_overflow(transport, query=query, limit=limit, now=now)
+            threads.extend(so_threads)
+            status["stack_overflow"] = {"ok": True, "count": len(so_threads), "reason": ""}
+        except PainPointSearchError as exc:
+            status["stack_overflow"] = {"ok": False, "count": 0, "reason": exc.message}
+
     if "indie_hackers" in sources:
         ih_result = search_indie_hackers(transport, query=query, limit=limit)
         status["indie_hackers"] = {"ok": ih_result["available"], "count": len(ih_result["threads"]),
@@ -201,6 +281,7 @@ def search_all(transport: Any, *, query: str, subreddits: list[str] | None = Non
 
 __all__ = [
     "ALGOLIA_HN_SEARCH_URL", "INDIEHACKERS_SEARCH_URL", "SOURCES", "SOURCE_LABELS",
-    "PainPointSearchError", "PainPointThread", "search_all", "search_hacker_news",
-    "search_indie_hackers",
+    "STACKEXCHANGE_FILTER", "STACKEXCHANGE_SEARCH_URL", "PainPointSearchError",
+    "PainPointThread", "search_all", "search_hacker_news", "search_indie_hackers",
+    "search_stack_overflow",
 ]

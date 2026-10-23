@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.2 -- 2026-10-23
+
+### Added
+
+- **Stack Overflow added as a fourth pain-point source.** `pain-points` now also searches
+  Stack Overflow question titles *and* bodies (not just titles) via the free, keyless Stack
+  Exchange API, sorted by score -- some of the highest-signal pain points anywhere, since a
+  developer asking "how do I do X" or "is there a tool for Y" is already looking for exactly
+  what a dev tool/SaaS product usually offers. No API key required (shared anonymous 300
+  request/day quota). `painpoints.SOURCES`/`SOURCE_LABELS` gained `"stack_overflow"`, so
+  `pain-points --source stack_overflow` works immediately and it's included by default
+  alongside Reddit, Hacker News and the best-effort Indie Hackers source.
+
 ## 0.3.1 -- 2026-10-23
 
 ### Added

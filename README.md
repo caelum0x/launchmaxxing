@@ -90,10 +90,15 @@ after to track it.
 - **Shareable one-page launch report (`report`)** -- a Markdown summary of
   everything tracked for one product, to paste into a doc or Slack instead
   of re-explaining launch status by hand.
-- **Read-only Reddit pain-point search** -- finds threads where people
-  complain about the problem your product solves, and drafts a reply for
-  each one. It never posts, comments or votes on anything: every reply is
-  a draft for you to read, edit and post yourself.
+- **Read-only pain-point search across Reddit, Hacker News and Stack
+  Overflow** -- finds threads/questions where people complain about (or
+  ask how to solve) the problem your product solves, and drafts a reply
+  for each one. Stack Overflow searches both question titles and bodies
+  via the free, keyless Stack Exchange API -- some of the highest-signal
+  pain points anywhere, since the asker is already looking for exactly
+  what a dev tool usually offers. It never posts, comments or votes on
+  anything: every reply is a draft for you to read, edit and post
+  yourself.
 - **Competitor backlink lookup** -- "where is this competitor listed, so I
   submit there too." Works with zero setup (a free directory fallback
   list); add your own free [CrawlGraph](https://crawlgraph.com) API key
